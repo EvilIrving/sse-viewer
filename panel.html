@@ -3,16 +3,132 @@
   <head>
     <meta charset="utf-8"/>
     <style>
-      body { font-family: system-ui, sans-serif; margin: 0; }
+      body { font-family: system-ui, sans-serif; margin: 0; overflow: hidden; height: 100vh; }
       header { display: flex; gap: 8px; padding: 8px; border-bottom: 1px solid #ddd; }
       #filter { flex: 1; padding: 4px 8px; }
-      #list { padding: 8px; }
-      .item { border: 1px solid #eee; border-radius: 6px; padding: 8px; margin-bottom: 8px; }
-      .meta { font-size: 12px; color: #666; display: flex; justify-content: space-between; }
-      .pre { background: #f8f8f8; padding: 8px; border-radius: 6px; overflow: auto; white-space: pre-wrap; }
-      .tag { display: inline-block; font-size: 12px; padding: 2px 6px; border-radius: 4px; background: #eef; margin-right: 6px; }
       .toolbar { display: flex; gap: 8px; align-items: center; }
       .btn { padding: 4px 8px; border: 1px solid #ddd; border-radius: 4px; cursor: pointer; background: #fff; }
+      
+      /* 主容器布局 */
+      #container { display: flex; height: calc(100vh - 45px); }
+      
+      /* 列表区域 */
+      #listContainer { flex: 1; overflow: auto; border-right: 1px solid #ddd; }
+      #list { }
+      .list-item {
+        padding: 8px 12px;
+        border-bottom: 1px solid #eee;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: background 0.1s;
+      }
+      .list-item:hover { background: #f5f5f5; }
+      .list-item.selected { background: #e3f2fd; border-left: 3px solid #2196f3; }
+      .list-item-left { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
+      .list-item-right { font-size: 11px; color: #999; white-space: nowrap; margin-left: 8px; }
+      .tag { display: inline-block; font-size: 11px; padding: 2px 6px; border-radius: 3px; background: #eef; }
+      .tag.type { background: #e8f5e9; color: #2e7d32; }
+      .tag.event { background: #fff3e0; color: #e65100; }
+      .url { font-size: 12px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      
+      /* 抽屉面板 */
+      #drawer {
+        width: 0;
+        background: #fff;
+        overflow: hidden;
+        transition: width 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        border-left: 1px solid #ddd;
+      }
+      #drawer.open { width: 50%; }
+      
+      /* 抽屉头部 */
+      #drawerHeader {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fafafa;
+      }
+      #drawerTitle { font-weight: 600; font-size: 14px; }
+      #closeDrawer {
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: transparent;
+        border: none;
+        font-size: 18px;
+        color: #666;
+      }
+      #closeDrawer:hover { background: #eee; }
+      
+      /* Tab 标签 */
+      #drawerTabs {
+        display: flex;
+        border-bottom: 1px solid #ddd;
+        background: #fafafa;
+      }
+      .tab {
+        padding: 10px 16px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        font-size: 13px;
+        transition: all 0.2s;
+      }
+      .tab:hover { background: #f0f0f0; }
+      .tab.active {
+        border-bottom-color: #2196f3;
+        color: #2196f3;
+        background: #fff;
+      }
+      
+      /* Tab 内容 */
+      #drawerContent {
+        flex: 1;
+        overflow: auto;
+        padding: 12px;
+      }
+      .tab-panel { display: none; }
+      .tab-panel.active { display: block; }
+      
+      .info-row {
+        display: flex;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+      }
+      .info-label {
+        width: 100px;
+        font-weight: 600;
+        color: #666;
+        font-size: 12px;
+      }
+      .info-value {
+        flex: 1;
+        font-size: 12px;
+        word-break: break-all;
+      }
+      
+      .json-view {
+        background: #f8f8f8;
+        padding: 12px;
+        border-radius: 6px;
+        overflow: auto;
+        font-family: 'Consolas', 'Monaco', monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        word-break: break-all;
+      }
+      
+      .empty-state {
+        padding: 40px;
+        text-align: center;
+        color: #999;
+        font-size: 14px;
+      }
     </style>
   </head>
   <body>
@@ -20,10 +136,29 @@
       <input id="filter" placeholder="按 URL 或事件名过滤（支持关键字）"/>
       <div class="toolbar">
         <button id="clear" class="btn">清空</button>
-        <label><input type="checkbox" id="jsonPretty" checked/> JSON美化</label>
       </div>
     </header>
-    <div id="list"></div>
+    <div id="container">
+      <div id="listContainer">
+        <div id="list"></div>
+      </div>
+      <div id="drawer">
+        <div id="drawerHeader">
+          <div id="drawerTitle">详细信息</div>
+          <button id="closeDrawer">×</button>
+        </div>
+        <div id="drawerTabs">
+          <div class="tab active" data-tab="data">Data</div>
+          <div class="tab" data-tab="headers">Headers</div>
+          <div class="tab" data-tab="raw">Raw</div>
+        </div>
+        <div id="drawerContent">
+          <div class="tab-panel active" id="tabData"></div>
+          <div class="tab-panel" id="tabHeaders"></div>
+          <div class="tab-panel" id="tabRaw"></div>
+        </div>
+      </div>
+    </div>
     <script src="panel.js"></script>
   </body>
 </html>
