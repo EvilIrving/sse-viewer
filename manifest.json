@@ -1,12 +1,22 @@
 {
-  "name": "SSE Viewer",
+  "name": "SSE Viewer BETA",
   "version": "0.1.0",
   "manifest_version": 3,
-  "description": "Capture and visualize Server-Sent Events (SSE) in DevTools",
+  "description": "此扩展程序目前处于 Beta 版测试阶段 - Capture and visualize Server-Sent Events (SSE) in DevTools",
+  "icons": {
+    "16": "./icon16.png",
+    "32": "./icon32.png",
+    "48": "./icon48.png",
+    "128": "./icon128.png"
+  },
   "devtools_page": "devtools.html",
-  "permissions": ["scripting"],
-  "host_permissions": ["<all_urls>"],
-  "background": { 
+  "permissions": [
+    "scripting"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
     "service_worker": "background.js",
     "type": "module"
   }
