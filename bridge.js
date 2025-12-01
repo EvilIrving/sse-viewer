@@ -14,6 +14,14 @@
   const MAX_QUEUE_SIZE = 100;
 
   function connect() {
+    // 检查扩展上下文是否有效
+    if (!chrome.runtime || !chrome.runtime.id) {
+      console.error('[SSE Viewer] Extension context is invalid, stopping reconnect attempts');
+      isConnected = false;
+      port = null;
+      return;
+    }
+    
     try {
       port = chrome.runtime.connect({ name: 'bridge' });
       isConnected = true;
@@ -21,7 +29,14 @@
       port.onDisconnect.addListener(() => {
         isConnected = false;
         port = null;
-        console.warn('[SSE Viewer] Bridge port disconnected, will attempt reconnect');
+        
+        // 检查是否是扩展上下文失效导致的断开
+        const lastError = chrome.runtime.lastError;
+        if (lastError) {
+          console.warn('[SSE Viewer] Bridge port disconnected:', lastError.message);
+        } else {
+          console.warn('[SSE Viewer] Bridge port disconnected, will attempt reconnect');
+        }
         
         // 5秒后尝试重连
         if (reconnectTimer) clearTimeout(reconnectTimer);
@@ -51,7 +66,13 @@
       isConnected = false;
       port = null;
       
-      // 扩展可能已失效，稍后重试
+      // 如果是扩展上下文失效，不再尝试重连
+      if (err.message && err.message.includes('Extension context invalidated')) {
+        console.error('[SSE Viewer] Extension context invalidated, stopping reconnect attempts');
+        return;
+      }
+      
+      // 其他错误，稍后重试
       if (reconnectTimer) clearTimeout(reconnectTimer);
       reconnectTimer = setTimeout(() => {
         connect();

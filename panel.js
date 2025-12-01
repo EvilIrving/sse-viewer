@@ -19,35 +19,118 @@ const state = {
 
 let port;
 let isConnected = false;
+let reconnectTimer = null;
+let reconnectAttempts = 0;
+const MAX_RECONNECT_ATTEMPTS = 10;
+const RECONNECT_INTERVAL = 3000; // 3秒
 
-try {
-  port = chrome.runtime.connect({ name: 'panel' });
-  isConnected = true;
-  
-  port.onMessage.addListener((msg) => {
-    if (!msg || !msg.__sse_viewer) return;
-    state.events.push(msg);
-    render();
-  });
-  
-  port.onDisconnect.addListener(() => {
+function connect() {
+  // 检查扩展上下文是否有效
+  if (!chrome.runtime || !chrome.runtime.id) {
+    console.error('[SSE Viewer Panel] Extension context is invalid, stopping reconnect attempts');
     isConnected = false;
-    console.warn('[SSE Viewer] Port disconnected, extension context may be invalidated');
-    list.innerHTML = '<div style="padding: 20px; color: #ff6b6b;">连接已断开：扩展上下文已失效，请重新加载扩展。</div>';
-  });
-  
-  // 发送初始化消息
-  try {
-    port.postMessage({ type: 'init', tabId: chrome.devtools.inspectedWindow.tabId });
-  } catch (err) {
-    console.error('[SSE Viewer] Failed to send init message:', err);
-    isConnected = false;
-    list.innerHTML = '<div style="padding: 20px; color: #ff6b6b;">初始化失败：扩展上下文已失效，请重新加载扩展。</div>';
+    list.innerHTML = '<div style="padding: 20px; color: #ff6b6b;">扩展上下文已失效，请重新加载扩展。</div>';
+    // 更新重连提示
+    const notice = document.getElementById('reconnect-notice');
+    if (notice) {
+      notice.style.background = '#f44336';
+      notice.textContent = '扩展上下文已失效：请重新加载扩展';
+    }
+    return;
   }
-} catch (e) {
-  console.error('[SSE Viewer] Failed to connect to background:', e);
-  list.innerHTML = '<div style="padding: 20px; color: #ff6b6b;">连接失败：扩展上下文已失效，请重新加载扩展或刷新页面。</div>';
+  
+  try {
+    port = chrome.runtime.connect({ name: 'panel' });
+    isConnected = true;
+    reconnectAttempts = 0;
+    
+    console.log('[SSE Viewer Panel] Connected to background');
+    
+    port.onMessage.addListener((msg) => {
+      if (!msg || !msg.__sse_viewer) return;
+      state.events.push(msg);
+      render();
+    });
+    
+    port.onDisconnect.addListener(() => {
+      isConnected = false;
+      
+      // 检查是否是扩展上下文失效导致的断开
+      const lastError = chrome.runtime.lastError;
+      if (lastError) {
+        console.warn('[SSE Viewer Panel] Port disconnected:', lastError.message);
+      } else {
+        console.warn('[SSE Viewer Panel] Port disconnected, will attempt reconnect');
+      }
+      
+      // 显示重连提示，但不影响已有数据
+      let notice = document.getElementById('reconnect-notice');
+      if (!notice) {
+        notice = document.createElement('div');
+        notice.id = 'reconnect-notice';
+        notice.style.cssText = 'position: fixed; top: 10px; right: 10px; padding: 10px 16px; background: #ff9800; color: white; border-radius: 4px; font-size: 12px; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);';
+        document.body.appendChild(notice);
+      }
+      notice.textContent = '连接已断开，正在重连...';
+      notice.style.background = '#ff9800';
+      
+      // 尝试重连
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(() => {
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          reconnectAttempts++;
+          console.log(`[SSE Viewer Panel] Reconnect attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
+          connect();
+        } else {
+          console.error('[SSE Viewer Panel] Max reconnect attempts reached');
+          const notice = document.getElementById('reconnect-notice');
+          if (notice) {
+            notice.style.background = '#f44336';
+            notice.textContent = '连接失败：请重新加载扩展';
+          }
+        }
+      }, RECONNECT_INTERVAL);
+    });
+    
+    // 发送初始化消息
+    try {
+      port.postMessage({ type: 'init', tabId: chrome.devtools.inspectedWindow.tabId });
+      
+      // 移除重连提示
+      const notice = document.getElementById('reconnect-notice');
+      if (notice) {
+        notice.remove();
+      }
+    } catch (err) {
+      console.error('[SSE Viewer Panel] Failed to send init message:', err);
+      isConnected = false;
+      throw err;
+    }
+  } catch (e) {
+    console.error('[SSE Viewer Panel] Failed to connect to background:', e);
+    isConnected = false;
+    
+    // 如果是扩展上下文失效，不再尝试重连
+    if (e.message && e.message.includes('Extension context invalidated')) {
+      console.error('[SSE Viewer Panel] Extension context invalidated, stopping reconnect attempts');
+      list.innerHTML = '<div style="padding: 20px; color: #ff6b6b;">扩展上下文已失效，请重新加载扩展。</div>';
+      const notice = document.getElementById('reconnect-notice');
+      if (notice) {
+        notice.style.background = '#f44336';
+        notice.textContent = '扩展上下文已失效：请重新加载扩展';
+      }
+      return;
+    }
+    
+    // 如果是初次连接失败，显示错误信息
+    if (reconnectAttempts === 0) {
+      list.innerHTML = '<div style="padding: 20px; color: #ff6b6b;">连接失败：扩展上下文已失效，请重新加载扩展或刷新页面。</div>';
+    }
+  }
 }
+
+// 初始连接
+connect();
 
 filter.addEventListener('input', () => {
   state.filterText = filter.value.trim().toLowerCase();
