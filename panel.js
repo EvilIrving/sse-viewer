@@ -99,27 +99,18 @@ function toggleRequestExpand(requestKey) {
   render();
 }
 
-// 从 URL 中提取 conversation_id 或其他 ID
-function extractRequestId(url, payload) {
-  // 尝试从 URL 中提取 ID
-  const urlMatch = url.match(/conversation\/([^/?]+)/);
-  if (urlMatch) return urlMatch[1];
-  
-  // 尝试从 payload 中提取
-  if (payload?.json?.conversation_id) return payload.json.conversation_id;
-  if (payload?.conversation_id) return payload.conversation_id;
-  
-  return null;
-}
-
-// 生成请求的唯一键
+// 生成请求的唯一键（使用 streamId）
 function getRequestKey(event) {
-  const baseUrl = event.url.split('?')[0]; // 去掉查询参数
-  const requestId = extractRequestId(event.url, event.payload);
-  return requestId ? `${baseUrl}#${requestId}` : baseUrl;
+  // 优先使用 streamId（stream-open/close 事件中携带）
+  if (event.payload?.streamId) {
+    return event.payload.streamId;
+  }
+  
+  // 对于旧的 EventSource 事件，使用 URL（因为 EventSource 实例本身就是唯一的）
+  return event.url;
 }
 
-// 按请求分组事件
+// 按请求分组事件（使用 streamId）
 function groupEventsByRequest(events) {
   const groups = new Map();
   
@@ -129,15 +120,21 @@ function groupEventsByRequest(events) {
       groups.set(key, {
         key,
         url: event.url.split('?')[0],
-        requestId: extractRequestId(event.url, event.payload),
+        streamId: event.payload?.streamId, // 保存 streamId
         messages: [],
         firstTime: event.time,
         lastTime: event.time,
+        isOpen: event.type === 'stream-open', // 标记连接是否打开
       });
     }
     const group = groups.get(key);
     group.messages.push(event);
     group.lastTime = event.time;
+    
+    // 更新连接状态
+    if (event.type === 'stream-close') {
+      group.isOpen = false;
+    }
   }
   
   return Array.from(groups.values()).sort((a, b) => b.firstTime - a.firstTime);
@@ -210,9 +207,21 @@ function render() {
     
     const urlSpan = document.createElement('span');
     urlSpan.className = 'request-url';
-    const displayUrl = group.requestId ? `${group.url} (${group.requestId.substring(0, 8)}...)` : group.url;
+    // 显示 URL 和 streamId（如果存在）
+    const displayUrl = group.streamId 
+      ? `${group.url} [${group.streamId.substring(7, 15)}...]` 
+      : group.url;
     urlSpan.textContent = displayUrl;
-    urlSpan.title = group.url + (group.requestId ? ` [${group.requestId}]` : '');
+    urlSpan.title = group.url + (group.streamId ? ` [Stream: ${group.streamId}]` : '');
+    
+    // 如果连接还在打开状态，添加绿色指示器
+    if (group.isOpen) {
+      const indicator = document.createElement('span');
+      indicator.textContent = ' ●';
+      indicator.style.color = '#4caf50';
+      indicator.title = '连接打开中';
+      urlSpan.appendChild(indicator);
+    }
     
     headerLeft.appendChild(expandIcon);
     headerLeft.appendChild(urlSpan);
@@ -390,7 +399,8 @@ function renderRequestSummary(group) {
   tabHeaders.innerHTML = '';
   const infoRows = [
     { label: 'URL', value: group.url },
-    { label: 'Request ID', value: group.requestId || 'N/A' },
+    { label: 'Stream ID', value: group.streamId || 'N/A' },
+    { label: '连接状态', value: group.isOpen ? '🟢 打开中' : '⚫ 已关闭' },
     { label: '首次时间', value: new Date(group.firstTime).toLocaleString() },
     { label: '最后时间', value: new Date(group.lastTime).toLocaleString() },
     { label: '消息数量', value: group.messages.length },
@@ -446,7 +456,7 @@ function renderMessage(event, group) {
   tabHeaders.innerHTML = '';
   
   const infoRows = [
-    { label: 'Request ID', value: group.requestId || 'N/A' },
+    { label: 'Stream ID', value: group.streamId || 'N/A' },
     { label: 'URL', value: event.url },
     { label: 'Time', value: new Date(event.time).toLocaleString() },
     { label: 'Type', value: event.type },
