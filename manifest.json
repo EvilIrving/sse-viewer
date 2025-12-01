@@ -1,0 +1,9 @@
+{
+  "name": "SSE Viewer",
+  "version": "0.1.0",
+  "manifest_version": 3,
+  "devtools_page": "devtools.html",
+  "permissions": ["scripting"],
+  "host_permissions": ["<all_urls>"],
+  "background": { "service_worker": "background.js" }
+}
