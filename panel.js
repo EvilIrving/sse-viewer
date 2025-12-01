@@ -1,5 +1,6 @@
 // panel.js
 const list = document.getElementById('list');
+const listContainer = document.getElementById('listContainer');
 const filter = document.getElementById('filter');
 const clearBtn = document.getElementById('clear');
 const drawer = document.getElementById('drawer');
@@ -12,7 +13,8 @@ const tabRaw = document.getElementById('tabRaw');
 const state = {
   events: [], // {time, type, url, payload: {data,event,id,json, ...}}
   filterText: '',
-  selectedIndex: -1,
+  expandedRequests: new Set(), // 展开的请求组
+  selectedRequest: null, // {requestKey, messageIndex} 或 {requestKey} 只选择请求头
 };
 
 let port;
@@ -54,7 +56,8 @@ filter.addEventListener('input', () => {
 
 clearBtn.addEventListener('click', () => {
   state.events = [];
-  state.selectedIndex = -1;
+  state.expandedRequests.clear();
+  state.selectedRequest = null;
   closeDrawer();
   render();
 });
@@ -74,15 +77,70 @@ tabs.forEach(tab => {
 
 function closeDrawer() {
   drawer.classList.remove('open');
-  state.selectedIndex = -1;
+  listContainer.classList.remove('drawer-open');
+  state.selectedRequest = null;
   render();
 }
 
-function openDrawer(index) {
-  state.selectedIndex = index;
+function openDrawer(requestKey, messageIndex = null) {
+  state.selectedRequest = { requestKey, messageIndex };
   drawer.classList.add('open');
+  listContainer.classList.add('drawer-open');
   renderDrawer();
   render();
+}
+
+function toggleRequestExpand(requestKey) {
+  if (state.expandedRequests.has(requestKey)) {
+    state.expandedRequests.delete(requestKey);
+  } else {
+    state.expandedRequests.add(requestKey);
+  }
+  render();
+}
+
+// 从 URL 中提取 conversation_id 或其他 ID
+function extractRequestId(url, payload) {
+  // 尝试从 URL 中提取 ID
+  const urlMatch = url.match(/conversation\/([^/?]+)/);
+  if (urlMatch) return urlMatch[1];
+  
+  // 尝试从 payload 中提取
+  if (payload?.json?.conversation_id) return payload.json.conversation_id;
+  if (payload?.conversation_id) return payload.conversation_id;
+  
+  return null;
+}
+
+// 生成请求的唯一键
+function getRequestKey(event) {
+  const baseUrl = event.url.split('?')[0]; // 去掉查询参数
+  const requestId = extractRequestId(event.url, event.payload);
+  return requestId ? `${baseUrl}#${requestId}` : baseUrl;
+}
+
+// 按请求分组事件
+function groupEventsByRequest(events) {
+  const groups = new Map();
+  
+  for (const event of events) {
+    const key = getRequestKey(event);
+    if (!groups.has(key)) {
+      groups.set(key, {
+        key,
+        url: event.url.split('?')[0],
+        requestId: extractRequestId(event.url, event.payload),
+        messages: [],
+        firstTime: event.time,
+        lastTime: event.time,
+      });
+    }
+    const group = groups.get(key);
+    group.messages.push(event);
+    group.lastTime = event.time;
+  }
+  
+  return Array.from(groups.values()).sort((a, b) => b.firstTime - a.firstTime);
 }
 
 function switchTab(tabName) {
@@ -113,81 +171,259 @@ function switchTab(tabName) {
 
 function render() {
   const ft = state.filterText;
-  const items = state.events.filter((e) => {
+  const filteredEvents = state.events.filter((e) => {
     if (!ft) return true;
     const s = `${e.url} ${e.type} ${(e.payload?.event ?? '')}`.toLowerCase();
     return s.includes(ft);
   });
+  
+  const groups = groupEventsByRequest(filteredEvents);
 
   list.innerHTML = '';
   
-  if (items.length === 0) {
-    list.innerHTML = '<div class="empty-state">暂无 SSE 消息</div>';
+  if (groups.length === 0) {
+    list.innerHTML = '<div class="empty-state">暂无 SSE 请求</div>';
     return;
   }
   
-  for (let i = 0; i < items.length; i++) {
-    const e = items[i];
-    const div = document.createElement('div');
-    div.className = 'list-item';
+  for (const group of groups) {
+    const groupDiv = document.createElement('div');
+    groupDiv.className = 'request-group';
     
-    // 高亮选中的项
-    if (i === state.selectedIndex) {
-      div.classList.add('selected');
-    }
+    // 请求头部
+    const header = document.createElement('div');
+    header.className = 'request-header';
     
-    const left = document.createElement('div');
-    left.className = 'list-item-left';
+    const isExpanded = state.expandedRequests.has(group.key);
+    const isHeaderSelected = state.selectedRequest?.requestKey === group.key && state.selectedRequest.messageIndex === null;
     
-    const typeTag = document.createElement('span');
-    typeTag.className = 'tag type';
-    typeTag.textContent = e.type;
+    if (isExpanded) header.classList.add('expanded');
+    if (isHeaderSelected) header.classList.add('selected');
     
-    const eventTag = document.createElement('span');
-    eventTag.className = 'tag event';
-    eventTag.textContent = e.payload?.event || 'message';
+    const headerLeft = document.createElement('div');
+    headerLeft.className = 'request-header-left';
+    
+    const expandIcon = document.createElement('span');
+    expandIcon.className = 'expand-icon';
+    expandIcon.textContent = '▶';
+    if (isExpanded) expandIcon.classList.add('expanded');
     
     const urlSpan = document.createElement('span');
-    urlSpan.className = 'url';
-    urlSpan.textContent = e.url;
-    urlSpan.title = e.url;
+    urlSpan.className = 'request-url';
+    const displayUrl = group.requestId ? `${group.url} (${group.requestId.substring(0, 8)}...)` : group.url;
+    urlSpan.textContent = displayUrl;
+    urlSpan.title = group.url + (group.requestId ? ` [${group.requestId}]` : '');
     
-    left.appendChild(typeTag);
-    left.appendChild(eventTag);
-    left.appendChild(urlSpan);
+    headerLeft.appendChild(expandIcon);
+    headerLeft.appendChild(urlSpan);
     
-    const right = document.createElement('div');
-    right.className = 'list-item-right';
-    right.textContent = new Date(e.time).toLocaleTimeString();
+    const headerRight = document.createElement('div');
+    headerRight.className = 'request-header-right';
     
-    div.appendChild(left);
-    div.appendChild(right);
+    const messageCount = document.createElement('span');
+    messageCount.className = 'message-count';
+    messageCount.textContent = group.messages.length;
     
-    // 点击事件
-    div.addEventListener('click', () => {
-      openDrawer(i);
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'request-time';
+    timeSpan.textContent = new Date(group.firstTime).toLocaleTimeString();
+    
+    headerRight.appendChild(messageCount);
+    headerRight.appendChild(timeSpan);
+    
+    header.appendChild(headerLeft);
+    header.appendChild(headerRight);
+    
+    // 点击展开图标 - 切换展开/收起
+    expandIcon.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleRequestExpand(group.key);
     });
     
-    list.appendChild(div);
+    // 点击请求头 - 打开抽屉显示请求信息
+    header.addEventListener('click', (e) => {
+      if (e.target === expandIcon) return;
+      openDrawer(group.key, null);
+    });
+    
+    groupDiv.appendChild(header);
+    
+    // 子消息列表
+    if (group.messages.length > 0) {
+      const messageList = document.createElement('div');
+      messageList.className = 'message-list';
+      if (isExpanded) messageList.classList.add('expanded');
+      
+      for (let i = 0; i < group.messages.length; i++) {
+        const msg = group.messages[i];
+        const msgItem = document.createElement('div');
+        msgItem.className = 'message-item';
+        
+        const isSelected = state.selectedRequest?.requestKey === group.key && 
+                          state.selectedRequest?.messageIndex === i;
+        if (isSelected) msgItem.classList.add('selected');
+        
+        const msgLeft = document.createElement('div');
+        msgLeft.className = 'message-item-left';
+        
+        const typeTag = document.createElement('span');
+        typeTag.className = 'tag type';
+        typeTag.textContent = msg.type;
+        
+        const eventTag = document.createElement('span');
+        eventTag.className = 'tag event';
+        eventTag.textContent = msg.payload?.event || 'message';
+        
+        const preview = document.createElement('span');
+        preview.className = 'message-preview';
+        const data = msg.payload?.data ?? msg.payload?.json ?? msg.payload;
+        let previewText = '';
+        if (typeof data === 'string') {
+          previewText = data.substring(0, 50);
+        } else if (data) {
+          previewText = JSON.stringify(data).substring(0, 50);
+        }
+        preview.textContent = previewText;
+        preview.title = previewText;
+        
+        msgLeft.appendChild(typeTag);
+        msgLeft.appendChild(eventTag);
+        msgLeft.appendChild(preview);
+        
+        const msgRight = document.createElement('div');
+        msgRight.className = 'message-item-right';
+        msgRight.textContent = new Date(msg.time).toLocaleTimeString();
+        
+        msgItem.appendChild(msgLeft);
+        msgItem.appendChild(msgRight);
+        
+        // 点击消息 - 打开抽屉显示消息详情
+        msgItem.addEventListener('click', () => {
+          openDrawer(group.key, i);
+        });
+        
+        messageList.appendChild(msgItem);
+      }
+      
+      groupDiv.appendChild(messageList);
+    }
+    
+    list.appendChild(groupDiv);
   }
 }
 
 function renderDrawer() {
-  if (state.selectedIndex < 0 || state.selectedIndex >= state.events.length) {
-    return;
-  }
+  if (!state.selectedRequest) return;
+  
+  const { requestKey, messageIndex } = state.selectedRequest;
   
   const ft = state.filterText;
-  const items = state.events.filter((e) => {
+  const filteredEvents = state.events.filter((e) => {
     if (!ft) return true;
     const s = `${e.url} ${e.type} ${(e.payload?.event ?? '')}`.toLowerCase();
     return s.includes(ft);
   });
   
-  const event = items[state.selectedIndex];
-  if (!event) return;
+  const groups = groupEventsByRequest(filteredEvents);
+  const group = groups.find(g => g.key === requestKey);
   
-  // 渲染 Data Tab
+  if (!group) return;
+  
+  // 如果选中的是请求头（没有具体消息索引）
+  if (messageIndex === null) {
+    renderRequestSummary(group);
+  } else {
+    // 选中的是具体消息
+    const message = group.messages[messageIndex];
+    if (message) {
+      renderMessage(message, group);
+    }
+  }
+}
+
+// 渲染请求概览
+function renderRequestSummary(group) {
+  // Data Tab - 显示所有消息的汇总
+  tabData.innerHTML = '';
+  const summaryDiv = document.createElement('div');
+  summaryDiv.innerHTML = `
+    <h3 style="margin-top: 0; font-size: 14px; color: #666;">请求概览</h3>
+    <div style="margin-bottom: 16px;">
+      <div style="font-size: 12px; color: #999; margin-bottom: 8px;">共 ${group.messages.length} 条消息</div>
+    </div>
+  `;
+  
+  group.messages.forEach((msg, idx) => {
+    const msgDiv = document.createElement('div');
+    msgDiv.style.marginBottom = '12px';
+    msgDiv.style.padding = '8px';
+    msgDiv.style.background = '#f9f9f9';
+    msgDiv.style.borderRadius = '4px';
+    msgDiv.style.fontSize = '11px';
+    
+    const header = document.createElement('div');
+    header.style.marginBottom = '4px';
+    header.style.color = '#666';
+    header.innerHTML = `<strong>#${idx + 1}</strong> ${msg.payload?.event || 'message'} - ${new Date(msg.time).toLocaleTimeString()}`;
+    
+    const preview = document.createElement('div');
+    preview.className = 'json-view';
+    preview.style.maxHeight = '100px';
+    preview.style.overflow = 'hidden';
+    preview.style.fontSize = '11px';
+    
+    const data = msg.payload?.json || msg.payload?.data || msg.payload;
+    if (typeof data === 'string') {
+      preview.textContent = data.substring(0, 200);
+    } else {
+      preview.textContent = JSON.stringify(data, null, 2).substring(0, 200);
+    }
+    
+    msgDiv.appendChild(header);
+    msgDiv.appendChild(preview);
+    summaryDiv.appendChild(msgDiv);
+  });
+  
+  tabData.appendChild(summaryDiv);
+  
+  // Headers Tab - 显示请求信息
+  tabHeaders.innerHTML = '';
+  const infoRows = [
+    { label: 'URL', value: group.url },
+    { label: 'Request ID', value: group.requestId || 'N/A' },
+    { label: '首次时间', value: new Date(group.firstTime).toLocaleString() },
+    { label: '最后时间', value: new Date(group.lastTime).toLocaleString() },
+    { label: '消息数量', value: group.messages.length },
+  ];
+  
+  infoRows.forEach(({ label, value }) => {
+    const row = document.createElement('div');
+    row.className = 'info-row';
+    
+    const labelDiv = document.createElement('div');
+    labelDiv.className = 'info-label';
+    labelDiv.textContent = label;
+    
+    const valueDiv = document.createElement('div');
+    valueDiv.className = 'info-value';
+    valueDiv.textContent = value;
+    
+    row.appendChild(labelDiv);
+    row.appendChild(valueDiv);
+    tabHeaders.appendChild(row);
+  });
+  
+  // Raw Tab - 显示原始数据
+  tabRaw.innerHTML = '';
+  const rawDiv = document.createElement('div');
+  rawDiv.className = 'json-view';
+  rawDiv.textContent = JSON.stringify(group, null, 2);
+  tabRaw.appendChild(rawDiv);
+}
+
+// 渲染单条消息
+function renderMessage(event, group) {
+  // Data Tab
   tabData.innerHTML = '';
   if (event.payload?.json) {
     const jsonDiv = document.createElement('div');
@@ -206,10 +442,11 @@ function renderDrawer() {
     tabData.appendChild(jsonDiv);
   }
   
-  // 渲染 Headers Tab
+  // Headers Tab
   tabHeaders.innerHTML = '';
   
   const infoRows = [
+    { label: 'Request ID', value: group.requestId || 'N/A' },
     { label: 'URL', value: event.url },
     { label: 'Time', value: new Date(event.time).toLocaleString() },
     { label: 'Type', value: event.type },
@@ -237,7 +474,7 @@ function renderDrawer() {
     tabHeaders.appendChild(row);
   });
   
-  // 渲染 Raw Tab
+  // Raw Tab
   tabRaw.innerHTML = '';
   const rawDiv = document.createElement('div');
   rawDiv.className = 'json-view';

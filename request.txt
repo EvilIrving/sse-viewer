@@ -1,0 +1,138 @@
+请求A：
+
+Request header
+POST /qbot/api/v1/generalsec-ai/chat/conversation/4bb3d2cd-5dbd-45f9-92b5-d2548e5bef72 HTTP/1.1
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
+Connection: keep-alive
+Content-Length: 1873
+Content-Type: application/json
+Host: localhost:18808
+Origin: http://localhost:9000
+Referer: http://localhost:9000/
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-site
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36
+accept: text/event-stream
+sec-ch-ua: "Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "Windows"
+
+Response header:
+HTTP/1.1 200 OK
+date: Mon, 01 Dec 2025 08:22:51 GMT
+server: uvicorn
+cache-control: no-store
+connection: keep-alive
+x-accel-buffering: no
+content-type: text/event-stream; charset=utf-8
+access-control-allow-origin: *
+access-control-allow-credentials: true
+Transfer-Encoding: chunked
+
+payload：
+
+{
+  "question": "继续任务",
+  "conversation_id": "4bb3d2cd-5dbd-45f9-92b5-d2548e5bef72",
+  "case_id": "",
+  "confirm_type": 3,
+  "package_nodes": [],
+  "confirm_form_data": {
+    "formName": "filter",
+    "filter_tree": "为了分析机主的通讯行为，需要检索基本信息类别下信息应用的通话记录",
+    "filter_keyword": "",
+    "analysis_prompt": "```\n作为通讯行为分析专家，请基于以下与问题相关的应用节点数据分析是否存在频繁通话行为。\n\n## 相关数据源分析\n**相关应用节点**：社交通讯/微信\n**相关数据类型特征**：微信通话记录、联系人信息\n\n## 分层识别标准（专注于相关节点）\n\n### 第一层：相关数据源特征识别\n- **微信数据特点**：包含通话时间、通话时长、联系人信息\n- **微信行为模式**：用户与特定联系人之间的频繁通话行为\n\n### 第二层：相关节点内容特征分析\n1. **通话频率**：分析用户与特定联系人之间的通话次数，判断是否频繁\n2. **通话时长**：分析用户与特定联系人之间的通话时长，判断是否异常\n3. **联系人信息**：分析用户与特定联系人之间的关系，判断是否频繁通话\n\n### 第三层：相关节点行为模式综合判断\n- **相关单节点分析**：基于微信通话记录和联系人信息，判断用户与特定联系人之间的通话频率\n- **相关跨节点关联**：无跨节点关联分析\n\n## 相关应用场景边界说明\n- **微信正面特征**：通话记录和联系人信息可以用于判断通话频率\n- **微信负面特征**：无法通过微信数据判断其他应用中的通话行为\n- **相关跨应用边界**：无跨应用边界分析\n\n## 质量验证要求\n确保分析结果与微信通话记录和联系人信息的数据结构和行为特征100%匹配，内容精简且针对性强。\n```"
+  }
+}
+
+
+
+同样的id，但是新的连接：
+Request header
+
+POST /qbot/api/v1/generalsec-ai/chat/conversation/4bb3d2cd-5dbd-45f9-92b5-d2548e5bef72 HTTP/1.1
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
+Connection: keep-alive
+Content-Length: 156
+Content-Type: application/json
+Host: localhost:18808
+Origin: http://localhost:9000
+Referer: http://localhost:9000/
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-site
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36
+accept: text/event-stream
+sec-ch-ua: "Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "Windows"
+
+
+response header：
+HTTP/1.1 200 OK
+date: Mon, 01 Dec 2025 08:22:41 GMT
+server: uvicorn
+cache-control: no-store
+connection: keep-alive
+x-accel-buffering: no
+content-type: text/event-stream; charset=utf-8
+access-control-allow-origin: *
+access-control-allow-credentials: true
+Transfer-Encoding: chunked
+
+
+payload:
+{
+  "question": "开始任务",
+  "conversation_id": "4bb3d2cd-5dbd-45f9-92b5-d2548e5bef72",
+  "case_id": "",
+  "confirm_type": 0,
+  "package_nodes": [],
+  "confirm_form_data": {}
+}
+
+
+不同的id建立的sse：
+Request header
+POST /qbot/api/v1/generalsec-ai/chat/conversation/37d9437d-6de3-48d9-999f-b1f034ef5b45 HTTP/1.1
+Accept-Encoding: gzip, deflate, br, zstd
+Accept-Language: zh-CN,zh;q=0.9,en;q=0.8
+Connection: keep-alive
+Content-Length: 193
+Content-Type: application/json
+Host: localhost:18808
+Origin: http://localhost:9000
+Referer: http://localhost:9000/
+Sec-Fetch-Dest: empty
+Sec-Fetch-Mode: cors
+Sec-Fetch-Site: same-site
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36
+accept: text/event-stream
+sec-ch-ua: "Chromium";v="142", "Google Chrome";v="142", "Not_A Brand";v="99"
+sec-ch-ua-mobile: ?0
+sec-ch-ua-platform: "Windows"
+
+
+Response header
+HTTP/1.1 200 OK
+date: Mon, 01 Dec 2025 08:30:41 GMT
+server: uvicorn
+cache-control: no-store
+connection: keep-alive
+x-accel-buffering: no
+content-type: text/event-stream; charset=utf-8
+access-control-allow-origin: *
+access-control-allow-credentials: true
+Transfer-Encoding: chunked
+
+payload：{
+  "question": "请问机主最近与谁打电话比较频繁？",
+  "conversation_id": "37d9437d-6de3-48d9-999f-b1f034ef5b45",
+  "case_id": "",
+  "confirm_type": -1,
+  "package_nodes": [],
+  "confirm_form_data": {}
+}
