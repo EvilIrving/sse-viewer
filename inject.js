@@ -69,19 +69,22 @@
         // 我们需要在 fetch 时标记这个流
         if (this.__sse_viewer_url) {
           const url = this.__sse_viewer_url;
+          // 为每个 ReadableStream 实例生成唯一的 streamId
+          // 这样即使 URL 相同，也能区分不同的连接
+          const streamId = `stream_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
           const originalRead = reader.read.bind(reader);
           const decoder = new TextDecoder('utf-8');
           let buf = '';
           
-          debug('Intercepted getReader for SSE stream', url);
-          post('stream-open', url, {});
+          debug('Intercepted getReader for SSE stream', { url, streamId });
+          post('stream-open', url, { streamId });
           
           reader.read = async function() {
             const result = await originalRead();
             
             if (result.done) {
-              debug('Stream done', url);
-              post('stream-close', url, {});
+              debug('Stream done', { url, streamId });
+              post('stream-close', url, { streamId });
               return result;
             }
             
@@ -97,6 +100,7 @@
                   try { json = JSON.parse(line); } catch {}
                   if (json) {
                     post('message', url, {
+                      streamId,
                       data: line,
                       event: json.type || 'message',
                       json
@@ -132,7 +136,7 @@
                   if (msg.data.endsWith('\n')) msg.data = msg.data.slice(0, -1);
                   let json = null;
                   try { json = JSON.parse(msg.data); } catch {}
-                  post('message', url, { ...msg, json });
+                  post('message', url, { streamId, ...msg, json });
                 }
               }
             } catch (e) {

@@ -13,6 +13,10 @@ SSE Viewer 是一个 Chrome DevTools 扩展，用于捕获和可视化网页中�
 - ✅ **支持纯 JSON 流格式**（逐行 JSON 对象）
 - ✅ 实时展示 SSE 事件流（open、message、error、close）
 - ✅ 支持事件过滤（按 URL 或事件名）
+- ✅ **按 SSE 请求分组显示**（自动提取 conversation_id 等标识）
+- ✅ **两级列表结构**（请求组 + 可展开的子消息列表）
+- ✅ **侧边抽屉面板**（类似 Network 面板的交互体验）
+- ✅ **多 Tab 详情展示**（Data / Headers / Raw）
 - ✅ JSON 数据自动解析和美化显示
 - ✅ 事件列表清空功能
 - ✅ 可选的调试日志模式
@@ -136,6 +140,12 @@ SSE Viewer 是一个 Chrome DevTools 扩展，用于捕获和可视化网页中�
    - 监听 `onDisconnect` 事件
    - 从 Map 中移除断开的端口
 
+4. **Service Worker 生命周期管理**
+   - 监听 `onStartup` 和 `onInstalled` 事件进行初始化
+   - 使用心跳机制（`setInterval`）保持 Service Worker 活跃
+   - 有活跃连接时启动心跳，无连接时停止心跳以节省资源
+   - 详细的连接生命周期日志便于调试
+
 ---
 
 #### `devtools.js` - DevTools 入口
@@ -156,9 +166,10 @@ SSE Viewer 是一个 Chrome DevTools 扩展，用于捕获和可视化网页中�
 **状态管理**:
 ```javascript
 state = {
-  events: [],        // 事件列表
-  filterText: '',    // 过滤关键字
-  pretty: true       // JSON 美化开关
+  events: [],              // 事件列表
+  filterText: '',          // 过滤关键字
+  expandedRequests: Set(), // 展开的请求组
+  selectedRequest: null    // 选中的请求 {requestKey, messageIndex}
 }
 ```
 
@@ -168,21 +179,32 @@ state = {
    - 发送 `init` 消息触发脚本注入
    - 监听消息并追加到 `state.events`
 
-2. **过滤功能**
+2. **请求分组**
+   - 从 URL 中提取 `conversation_id` 等标识符
+   - 支持从 payload 的 `json.conversation_id` 字段提取
+   - 按 `baseUrl + requestId` 生成唯一键进行分组
+   - 相同请求的消息自动聚合
+
+3. **两级列表展示**
+   - **请求头**: 显示 URL、消息数量、时间
+   - **子消息列表**: 点击展开图标显示该请求下的所有消息
+   - 支持独立展开/收起每个请求组
+
+4. **侧边抽屉面板**（宽度比例 1/3 列表 : 2/3 抽屉）
+   - **点击请求头**: 显示该请求的概览（所有消息汇总）
+   - **点击子消息**: 显示该消息的详细信息
+   - 包含 3 个 Tab 标签页：
+     - **Data**: 格式化的 JSON 数据
+     - **Headers**: 元信息（URL、时间、事件类型等）
+     - **Raw**: 原始完整数据
+
+5. **过滤功能**
    - 监听 `#filter` 输入框
    - 按 URL、type、event 字段模糊匹配
 
-3. **清空功能**
+6. **清空功能**
    - 点击 `#clear` 按钮清空 `state.events`
-
-4. **JSON 美化**
-   - 根据 `#jsonPretty` 复选框状态
-   - 使用 `JSON.stringify(data, null, 2)` 格式化
-
-5. **渲染逻辑**
-   - 遍历过滤后的事件列表
-   - 展示元数据：事件类型标签、时间戳、URL
-   - 展示数据：优先显示 JSON 美化结果，否则显示原始数据
+   - 同时关闭抽屉并重置选中状态
 
 ---
 
@@ -190,9 +212,21 @@ state = {
 
 #### `panel.html`
 DevTools 面板的 HTML 结构：
-- **Header**: 过滤输入框 + 工具栏（清空按钮 + JSON 美化开关）
-- **List**: 事件列表容器
-- **样式**: 简洁的卡片式设计，标签、时间戳、数据区
+- **Header**: 过滤输入框 + 工具栏（清空按钮）
+- **Container**: Flex 布局容器
+  - **列表区域** (33.33% 当抽屉打开时): 
+    - 请求组（request-group）
+    - 请求头（request-header）：带展开图标、URL、消息数量、时间
+    - 子消息列表（message-list）：可展开显示子消息项
+  - **抽屉面板** (66.67% 当打开时):
+    - 抽屉头部：标题 + 关闭按钮
+    - Tab 标签页：Data / Headers / Raw
+    - Tab 内容区：对应的详细信息
+- **样式**: 
+  - 类似 Network 面板的列表设计
+  - 平滑的展开/收起动画
+  - 选中状态高亮（蓝色背景 + 左边框）
+  - 悬停效果和过渡动画
 
 #### `devtools.html`
 DevTools 入口页面，仅引入 `devtools.js`
@@ -258,15 +292,15 @@ retry: 重连间隔
 ### 扩展功能
 1. **导出功能**: 支持导出事件列表为 JSON/CSV
 2. **时间线视图**: 可视化 SSE 连接的时间轴
-3. **请求详情**: 显示请求头、响应头、连接状态
-4. **自动重连监控**: 追踪 SSE 重连次数和间隔
-5. **性能统计**: 消息速率、流量统计
+3. **自动重连监控**: 追踪 SSE 重连次数和间隔
+4. **性能统计**: 消息速率、流量统计
+5. **请求对比**: 对比不同 conversation_id 的消息差异
 
 ### 代码优化
-1. **事件去重**: 避免重复注入脚本
-2. **内存管理**: 限制 `state.events` 最大长度
-3. **虚拟滚动**: 大量事件时优化渲染性能
-4. **TypeScript**: 添加类型定义提升可维护性
+1. **内存管理**: 限制 `state.events` 最大长度，自动清理旧数据
+2. **虚拟滚动**: 大量事件时优化渲染性能
+3. **TypeScript**: 添加类型定义提升可维护性
+4. **搜索优化**: 支持正则表达式和高级过滤条件
 
 ### 调试技巧
 1. **查看 Service Worker 日志**: `chrome://extensions` → 查看视图 → Service Worker
@@ -276,15 +310,38 @@ retry: 重连间隔
 
 ---
 
-## 常见问题
+# 常见问题
 
-### Q1: 为什么需要三层脚本通信？
+### Q1: 为什么 Service Worker 显示"无效"？
+**A**: 这通常是 Chrome MV3 的正常行为，有以下几种情况：
+
+**1. Service Worker 自动休眠（正常行为）**
+- Chrome MV3 的 Service Worker 在空闲 30 秒后会自动休眠以节省资源
+- 显示为"无效"状态不代表出错，Service Worker 会在需要时自动唤醒
+- 当有消息传递、端口连接等事件时会自动激活
+
+**2. 运行时错误导致崩溃**
+- 查看方法：`chrome://extensions` → 点击 "Service Worker (无效)" 链接
+- 检查控制台是否有红色错误信息
+- 常见错误：未捕获的异常、端口发送失败等
+
+**3. 保持活跃的解决方案**
+- 使用心跳机制：`setInterval` 定时执行简单操作（每 20 秒）
+- 在有活跃连接时启动心跳，无连接时停止
+- 参考 `background.js` 中的 `startKeepAlive()` 和 `stopKeepAlive()` 函数
+
+**4. 诊断步骤**
+- 重新加载扩展测试功能是否正常
+- 查看 Service Worker 控制台日志
+- 打开 DevTools 面板触发连接，观察是否自动唤醒
+
+### Q2: 为什么需要三层脚本通信？
 **A**: Chrome 扩展安全模型限制：
 - 页面脚本（MAIN）可拦截 EventSource，但无法使用 Chrome API
 - 内容脚本（ISOLATED）可使用 Chrome API，但无法访问页面对象
 - Service Worker 可跨标签页通信和管理生命周期
 
-### Q2: 如何支持更多 SSE 库？
+### Q3: 如何支持更多 SSE 库？
 **A**: 目前已覆盖：
 - 原生 `EventSource`
 - `fetch` + `ReadableStream` 模式
@@ -293,7 +350,14 @@ retry: 重连间隔
 
 若需支持自定义库（如 `xhr-streaming`），需在 `inject.js` 中添加对应拦截逻辑。
 
-### Q3: 性能影响如何？
+### Q4: 如何识别和分组不同的 SSE 请求？
+**A**: 
+- 从 URL 路径中提取标识符（如 `/conversation/{id}`）
+- 从 payload 的 `conversation_id`、`session_id` 等字段提取
+- 生成唯一键：`baseUrl + requestId`
+- 相同键的消息自动分组展示
+
+### Q5: 性能影响如何？
 **A**: 
 - 拦截代码轻量，对页面性能影响极小
 - 消息通过 `postMessage` 和端口传递，无阻塞
@@ -309,25 +373,7 @@ retry: 重连间隔
 
 ---
 
-## 更新日志
-
-### 2025-12-01 - v0.1.0
-- ✅ 实现原生 `EventSource` 拦截
-- ✅ 实现 `fetch` 拦截和标准 SSE 解析
-- ✅ **新增 `ReadableStream.getReader()` 拦截**
-  - 支持 `@microsoft/fetch-event-source` 库
-  - 解决第三方库直接读取流导致无法捕获的问题
-- ✅ **新增纯 JSON 流格式支持**
-  - 自动检测非标准 SSE 格式
-  - 逐行解析 JSON 对象
-  - 从 `json.type` 提取事件类型
-- ✅ 优化调试模式
-  - 默认关闭调试日志
-  - 通过 `sessionStorage.setItem('sse-viewer-debug', 'true')` 开启
-- ✅ 修复流读取时的数据丢失问题
-- ✅ 改进错误处理和异常捕获
-
 ---
 
 **最后更新**: 2025-12-01  
-**当前状态**: 已完成核心功能，支持主流 SSE 实现方式
+**当前状态**: 已完成核心功能，支持主流 SSE 实现方式，提供类似 Network 面板的交互体验
