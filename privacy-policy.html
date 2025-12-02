@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - SSE Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --background: 0 0% 100%;
+            --foreground: 240 10% 3.9%;
+            --muted: 240 4.8% 95.9%;
+            --muted-foreground: 240 3.8% 46.1%;
+            --border: 240 5.9% 90%;
+            --accent: 240 4.8% 95.9%;
+            --accent-foreground: 240 5.9% 10%;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: hsl(var(--foreground));
+            background: hsl(var(--background));
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            max-width: 768px;
+            margin: 0 auto;
+            padding: 4rem 1.5rem;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid hsl(var(--border));
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            margin-bottom: 0.75rem;
+            line-height: 1.2;
+        }
+
+        .last-updated {
+            color: hsl(var(--muted-foreground));
+            font-size: 0.875rem;
+        }
+
+        main {
+            margin-bottom: 4rem;
+        }
+
+        section {
+            margin-bottom: 2.5rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            letter-spacing: -0.01em;
+        }
+
+        h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: hsl(var(--foreground));
+            font-size: 1rem;
+        }
+
+        ul, ol {
+            margin-left: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        li {
+            margin-bottom: 0.5rem;
+            color: hsl(var(--foreground));
+        }
+
+        .highlight-box {
+            background: hsl(var(--accent));
+            border-left: 3px solid hsl(var(--foreground));
+            padding: 1rem 1.25rem;
+            margin: 1.5rem 0;
+            border-radius: 0.375rem;
+        }
+
+        .highlight-box p {
+            margin-bottom: 0;
+        }
+
+        a {
+            color: hsl(var(--foreground));
+            text-decoration: underline;
+            text-underline-offset: 2px;
+            transition: opacity 0.2s;
+        }
+
+        a:hover {
+            opacity: 0.7;
+        }
+
+        .contact-section {
+            background: hsl(var(--muted));
+            padding: 2rem;
+            border-radius: 0.5rem;
+            margin-top: 3rem;
+        }
+
+        .contact-section h2 {
+            margin-bottom: 1rem;
+        }
+
+        footer {
+            border-top: 1px solid hsl(var(--border));
+            padding-top: 2rem;
+            text-align: center;
+            color: hsl(var(--muted-foreground));
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 640px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            h2 {
+                font-size: 1.25rem;
+            }
+
+            .container {
+                padding: 2rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Privacy Policy</h1>
+            <p class="last-updated">Last Updated: December 2, 2025</p>
+        </header>
+
+        <main>
+            <section>
+                <h2>Introduction</h2>
+                <p>
+                    Welcome to SSE Viewer. This Privacy Policy explains how we handle your information when you use our browser extension. 
+                    We are committed to protecting your privacy and ensuring transparency about our data practices.
+                </p>
+                <div class="highlight-box">
+                    <p><strong>TL;DR:</strong> SSE Viewer operates entirely locally in your browser. We do not collect, store, or transmit any of your personal data to external servers.</p>
+                </div>
+            </section>
+
+            <section>
+                <h2>Information We Collect</h2>
+                <p>SSE Viewer is designed with privacy as a core principle. The extension:</p>
+                <ul>
+                    <li><strong>Does not collect personal information</strong> - We do not gather any identifiable information about you</li>
+                    <li><strong>Does not track your browsing history</strong> - Your web activity remains completely private</li>
+                    <li><strong>Does not use analytics or tracking tools</strong> - No third-party services monitor your usage</li>
+                    <li><strong>Processes data locally only</strong> - All SSE stream monitoring happens within your browser</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>How We Use Information</h2>
+                <p>The extension accesses the following data solely for its core functionality:</p>
+                
+                <h3>Network Request Monitoring</h3>
+                <p>
+                    SSE Viewer monitors network requests to identify and display Server-Sent Events (SSE) streams. 
+                    This monitoring occurs entirely within your browser's developer tools and is temporary—data is only held in memory while the DevTools panel is open.
+                </p>
+
+                <h3>Local Storage</h3>
+                <p>
+                    The extension may use browser local storage to save your preferences and settings. 
+                    This data never leaves your device and is stored securely within your browser's sandboxed environment.
+                </p>
+            </section>
+
+            <section>
+                <h2>Data Sharing and Third Parties</h2>
+                <p>We want to be crystal clear:</p>
+                <ul>
+                    <li>We do not sell your data</li>
+                    <li>We do not share your data with third parties</li>
+                    <li>We do not have servers that receive your data</li>
+                    <li>No external analytics or advertising services are integrated</li>
+                </ul>
+                <p>
+                    Since all processing happens locally in your browser, there is no data transmission to any external entity.
+                </p>
+            </section>
+
+            <section>
+                <h2>Permissions Explained</h2>
+                <p>SSE Viewer requires certain browser permissions to function. Here's why:</p>
+                
+                <h3>DevTools Permission</h3>
+                <p>
+                    Allows the extension to create a panel in your browser's developer tools where SSE streams are displayed. 
+                    This permission is essential for the core functionality but does not grant access to your browsing data.
+                </p>
+
+                <h3>WebRequest Permission</h3>
+                <p>
+                    Enables monitoring of network requests to identify SSE connections. This permission operates under the principle of minimum privilege—it only observes requests, does not modify them, and does not transmit data externally.
+                </p>
+
+                <h3>ActiveTab Permission</h3>
+                <p>
+                    Allows interaction with the currently active tab only when you explicitly open the DevTools panel. 
+                    This ensures the extension cannot access tabs you're not actively working with.
+                </p>
+            </section>
+
+            <section>
+                <h2>Data Security</h2>
+                <p>
+                    All data processed by SSE Viewer remains within the secure, sandboxed environment of your browser. 
+                    We follow browser extension security best practices to ensure:
+                </p>
+                <ul>
+                    <li>No unauthorized access to your data</li>
+                    <li>Isolation from other extensions and web pages</li>
+                    <li>Compliance with browser security policies</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Your Rights and Control</h2>
+                <p>You have complete control over the extension:</p>
+                <ul>
+                    <li><strong>Disable or Remove:</strong> You can disable or uninstall the extension at any time through your browser settings</li>
+                    <li><strong>Clear Data:</strong> You can clear any locally stored preferences by removing the extension</li>
+                    <li><strong>Transparency:</strong> The extension's source code behavior is transparent through the browser's extension inspection tools</li>
+                </ul>
+            </section>
+
+            <section>
+                <h2>Children's Privacy</h2>
+                <p>
+                    SSE Viewer is a developer tool and is not directed at children under 13 years of age. 
+                    We do not knowingly collect information from children. Since we don't collect any personal information at all, 
+                    this risk is inherently minimized.
+                </p>
+            </section>
+
+            <section>
+                <h2>Changes to This Privacy Policy</h2>
+                <p>
+                    We may update this Privacy Policy from time to time to reflect changes in the extension or legal requirements. 
+                    When we do, we will update the "Last Updated" date at the top of this page. We encourage you to review this policy periodically.
+                </p>
+                <p>
+                    Continued use of the extension after changes constitutes acceptance of the updated policy.
+                </p>
+            </section>
+
+            <section>
+                <h2>Open Source and Transparency</h2>
+                <p>
+                    We believe in transparency. The extension's code can be inspected through your browser's extension management interface, 
+                    allowing technically inclined users to verify our privacy claims.
+                </p>
+            </section>
+
+            <div class="contact-section">
+                <h2>Contact Us</h2>
+                <p>
+                    If you have any questions, concerns, or requests regarding this Privacy Policy or our privacy practices, 
+                    please don't hesitate to contact us:
+                </p>
+                <p>
+                    <strong>Email:</strong> <a href="mailto:jescain2024@gmail.com">jescain2024@gmail.com</a>
+                </p>
+                <p>
+                    We take your privacy seriously and will respond to your inquiries as promptly as possible.
+                </p>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 SSE Viewer. All rights reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>
