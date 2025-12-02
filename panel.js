@@ -1,4 +1,48 @@
 // panel.js
+// I18n helper functions
+const i18n = {
+  // Get message with optional substitutions
+  getMessage(key, substitutions) {
+    return chrome.i18n.getMessage(key, substitutions) || key;
+  },
+  
+  // Initialize all elements with i18n attributes
+  init() {
+    // Handle text content
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      el.textContent = this.getMessage(key);
+    });
+    
+    // Handle placeholders
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      const key = el.getAttribute('data-i18n-placeholder');
+      el.placeholder = this.getMessage(key);
+    });
+  },
+  
+  // Get current language from storage or browser
+  async getCurrentLanguage() {
+    // Check if custom language is set (Beta feature)
+    try {
+      const result = await chrome.storage.local.get(['customLanguage']);
+      if (result.customLanguage) {
+        return result.customLanguage;
+      }
+    } catch (e) {
+      console.warn('Failed to get custom language:', e);
+    }
+    
+    // Use browser UI language as default
+    return chrome.i18n.getUILanguage().replace('-', '_');
+  },
+  
+  // Set custom language (Beta feature only)
+  async setLanguage(lang) {
+    await chrome.storage.local.set({ customLanguage: lang });
+  }
+};
+
 const list = document.getElementById('list');
 const listContainer = document.getElementById('listContainer');
 const filter = document.getElementById('filter');
@@ -9,6 +53,7 @@ const tabs = document.querySelectorAll('.tab');
 const tabData = document.getElementById('tabData');
 const tabHeaders = document.getElementById('tabHeaders');
 const tabRaw = document.getElementById('tabRaw');
+const langSelector = document.getElementById('langSelector');
 
 const state = {
   events: [], // {time, type, url, payload: {data,event,id,json, ...}}
@@ -24,17 +69,46 @@ let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
 const RECONNECT_INTERVAL = 3000; // 3秒
 
+// Initialize i18n
+i18n.init();
+
+// Initialize language selector
+(async () => {
+  const currentLang = await i18n.getCurrentLanguage();
+  // Map browser language codes to our locale codes
+  const langMap = {
+    'zh_CN': 'zh_CN',
+    'zh': 'zh_CN',
+    'en': 'en',
+    'en_US': 'en',
+    'ja': 'ja',
+    'fr': 'fr'
+  };
+  const mappedLang = langMap[currentLang] || 'en';
+  langSelector.value = mappedLang;
+})();
+
+// Language selector change handler (Beta feature)
+langSelector.addEventListener('change', async (e) => {
+  const selectedLang = e.target.value;
+  await i18n.setLanguage(selectedLang);
+  
+  // Reload to apply new language
+  // Note: In production version, this selector will be removed
+  window.location.reload();
+});
+
 function connect() {
   // 检查扩展上下文是否有效
   if (!chrome.runtime || !chrome.runtime.id) {
     console.error('[SSE Viewer Panel] Extension context is invalid, stopping reconnect attempts');
     isConnected = false;
-    list.innerHTML = '<div style="padding: 20px; color: #ff6b6b;">扩展上下文已失效，请重新加载扩展。</div>';
+    list.innerHTML = `<div style="padding: 20px; color: #ff6b6b;">${i18n.getMessage('contextInvalidatedError')}</div>`;
     // 更新重连提示
     const notice = document.getElementById('reconnect-notice');
     if (notice) {
       notice.style.background = '#f44336';
-      notice.textContent = '扩展上下文已失效：请重新加载扩展';
+      notice.textContent = i18n.getMessage('contextInvalidated');
     }
     return;
   }
@@ -71,7 +145,7 @@ function connect() {
         notice.style.cssText = 'position: fixed; top: 10px; right: 10px; padding: 10px 16px; background: #ff9800; color: white; border-radius: 4px; font-size: 12px; z-index: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.2);';
         document.body.appendChild(notice);
       }
-      notice.textContent = '连接已断开，正在重连...';
+      notice.textContent = i18n.getMessage('reconnecting');
       notice.style.background = '#ff9800';
       
       // 尝试重连
@@ -86,7 +160,7 @@ function connect() {
           const notice = document.getElementById('reconnect-notice');
           if (notice) {
             notice.style.background = '#f44336';
-            notice.textContent = '连接失败：请重新加载扩展';
+            notice.textContent = i18n.getMessage('reconnectFailed');
           }
         }
       }, RECONNECT_INTERVAL);
@@ -113,18 +187,18 @@ function connect() {
     // 如果是扩展上下文失效，不再尝试重连
     if (e.message && e.message.includes('Extension context invalidated')) {
       console.error('[SSE Viewer Panel] Extension context invalidated, stopping reconnect attempts');
-      list.innerHTML = '<div style="padding: 20px; color: #ff6b6b;">扩展上下文已失效，请重新加载扩展。</div>';
+      list.innerHTML = `<div style="padding: 20px; color: #ff6b6b;">${i18n.getMessage('contextInvalidatedError')}</div>`;
       const notice = document.getElementById('reconnect-notice');
       if (notice) {
         notice.style.background = '#f44336';
-        notice.textContent = '扩展上下文已失效：请重新加载扩展';
+        notice.textContent = i18n.getMessage('contextInvalidated');
       }
       return;
     }
     
     // 如果是初次连接失败，显示错误信息
     if (reconnectAttempts === 0) {
-      list.innerHTML = '<div style="padding: 20px; color: #ff6b6b;">连接失败：扩展上下文已失效，请重新加载扩展或刷新页面。</div>';
+      list.innerHTML = `<div style="padding: 20px; color: #ff6b6b;">${i18n.getMessage('connectionFailedError')}</div>`;
     }
   }
 }
@@ -262,7 +336,7 @@ function render() {
   list.innerHTML = '';
   
   if (groups.length === 0) {
-    list.innerHTML = '<div class="empty-state">暂无 SSE 请求</div>';
+    list.innerHTML = `<div class="empty-state">${i18n.getMessage('emptyState')}</div>`;
     return;
   }
   
@@ -302,7 +376,7 @@ function render() {
       const indicator = document.createElement('span');
       indicator.textContent = ' ●';
       indicator.style.color = '#4caf50';
-      indicator.title = '连接打开中';
+      indicator.title = i18n.getMessage('connectionOpen');
       urlSpan.appendChild(indicator);
     }
     
@@ -439,9 +513,9 @@ function renderRequestSummary(group) {
   tabData.innerHTML = '';
   const summaryDiv = document.createElement('div');
   summaryDiv.innerHTML = `
-    <h3 style="margin-top: 0; font-size: 14px; color: #666;">请求概览</h3>
+    <h3 style="margin-top: 0; font-size: 14px; color: #666;">${i18n.getMessage('requestOverview')}</h3>
     <div style="margin-bottom: 16px;">
-      <div style="font-size: 12px; color: #999; margin-bottom: 8px;">共 ${group.messages.length} 条消息</div>
+      <div style="font-size: 12px; color: #999; margin-bottom: 8px;">${i18n.getMessage('messagesCount', group.messages.length)}</div>
     </div>
   `;
   
@@ -481,12 +555,12 @@ function renderRequestSummary(group) {
   // Headers Tab - 显示请求信息
   tabHeaders.innerHTML = '';
   const infoRows = [
-    { label: 'URL', value: group.url },
-    { label: 'Stream ID', value: group.streamId || 'N/A' },
-    { label: '连接状态', value: group.isOpen ? '🟢 打开中' : '⚫ 已关闭' },
-    { label: '首次时间', value: new Date(group.firstTime).toLocaleString() },
-    { label: '最后时间', value: new Date(group.lastTime).toLocaleString() },
-    { label: '消息数量', value: group.messages.length },
+    { label: i18n.getMessage('labelUrl'), value: group.url },
+    { label: i18n.getMessage('labelStreamId'), value: group.streamId || 'N/A' },
+    { label: i18n.getMessage('labelConnectionStatus'), value: group.isOpen ? i18n.getMessage('statusOpen') : i18n.getMessage('statusClosed') },
+    { label: i18n.getMessage('labelFirstTime'), value: new Date(group.firstTime).toLocaleString() },
+    { label: i18n.getMessage('labelLastTime'), value: new Date(group.lastTime).toLocaleString() },
+    { label: i18n.getMessage('labelMessageCount'), value: group.messages.length },
   ];
   
   infoRows.forEach(({ label, value }) => {
@@ -539,15 +613,15 @@ function renderMessage(event, group) {
   tabHeaders.innerHTML = '';
   
   const infoRows = [
-    { label: 'Stream ID', value: group.streamId || 'N/A' },
-    { label: 'URL', value: event.url },
-    { label: 'Time', value: new Date(event.time).toLocaleString() },
-    { label: 'Type', value: event.type },
-    { label: 'Event', value: event.payload?.event || 'message' },
+    { label: i18n.getMessage('labelStreamId'), value: group.streamId || 'N/A' },
+    { label: i18n.getMessage('labelUrl'), value: event.url },
+    { label: i18n.getMessage('labelTime'), value: new Date(event.time).toLocaleString() },
+    { label: i18n.getMessage('labelType'), value: event.type },
+    { label: i18n.getMessage('labelEvent'), value: event.payload?.event || 'message' },
   ];
   
   if (event.payload?.id) {
-    infoRows.push({ label: 'Event ID', value: event.payload.id });
+    infoRows.push({ label: i18n.getMessage('labelEventId'), value: event.payload.id });
   }
   
   infoRows.forEach(({ label, value }) => {

@@ -1,0 +1,144 @@
+{
+  "extName": {
+    "message": "SSE Viewer BETA",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Cette extension est actuellement en phase de test bêta - Capturez et visualisez les événements envoyés par le serveur (SSE) dans DevTools",
+    "description": "Extension description"
+  },
+  "filterPlaceholder": {
+    "message": "Filtrer par URL ou nom d'événement (prend en charge les mots-clés)",
+    "description": "Filter input placeholder"
+  },
+  "clearButton": {
+    "message": "Effacer",
+    "description": "Clear button text"
+  },
+  "detailsTitle": {
+    "message": "Détails",
+    "description": "Details drawer title"
+  },
+  "tabData": {
+    "message": "Données",
+    "description": "Data tab"
+  },
+  "tabHeaders": {
+    "message": "En-têtes",
+    "description": "Headers tab"
+  },
+  "tabRaw": {
+    "message": "Brut",
+    "description": "Raw tab"
+  },
+  "emptyState": {
+    "message": "Aucune requête SSE",
+    "description": "Empty state message"
+  },
+  "connectionOpen": {
+    "message": "Connexion ouverte",
+    "description": "Connection open tooltip"
+  },
+  "requestOverview": {
+    "message": "Aperçu de la requête",
+    "description": "Request overview title"
+  },
+  "messagesCount": {
+    "message": "$COUNT$ messages",
+    "description": "Messages count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "10"
+      }
+    }
+  },
+  "labelUrl": {
+    "message": "URL",
+    "description": "URL label"
+  },
+  "labelStreamId": {
+    "message": "ID de flux",
+    "description": "Stream ID label"
+  },
+  "labelConnectionStatus": {
+    "message": "État de la connexion",
+    "description": "Connection status label"
+  },
+  "labelFirstTime": {
+    "message": "Première heure",
+    "description": "First time label"
+  },
+  "labelLastTime": {
+    "message": "Dernière heure",
+    "description": "Last time label"
+  },
+  "labelMessageCount": {
+    "message": "Nombre de messages",
+    "description": "Message count label"
+  },
+  "labelTime": {
+    "message": "Heure",
+    "description": "Time label"
+  },
+  "labelType": {
+    "message": "Type",
+    "description": "Type label"
+  },
+  "labelEvent": {
+    "message": "Événement",
+    "description": "Event label"
+  },
+  "labelEventId": {
+    "message": "ID d'événement",
+    "description": "Event ID label"
+  },
+  "statusOpen": {
+    "message": "🟢 Ouvert",
+    "description": "Open status"
+  },
+  "statusClosed": {
+    "message": "⚫ Fermé",
+    "description": "Closed status"
+  },
+  "reconnecting": {
+    "message": "Connexion perdue, reconnexion en cours...",
+    "description": "Reconnecting message"
+  },
+  "reconnectFailed": {
+    "message": "Échec de la connexion : Veuillez recharger l'extension",
+    "description": "Reconnect failed message"
+  },
+  "contextInvalidated": {
+    "message": "Contexte d'extension invalidé : Veuillez recharger l'extension",
+    "description": "Context invalidated message"
+  },
+  "contextInvalidatedError": {
+    "message": "Contexte d'extension invalidé, veuillez recharger l'extension.",
+    "description": "Context invalidated error message"
+  },
+  "connectionFailedError": {
+    "message": "Échec de la connexion : Contexte d'extension invalidé, veuillez recharger l'extension ou actualiser la page.",
+    "description": "Connection failed error message"
+  },
+  "languageLabel": {
+    "message": "Langue",
+    "description": "Language selector label"
+  },
+  "langZhCn": {
+    "message": "简体中文",
+    "description": "Simplified Chinese"
+  },
+  "langEn": {
+    "message": "English",
+    "description": "English"
+  },
+  "langJa": {
+    "message": "日本語",
+    "description": "Japanese"
+  },
+  "langFr": {
+    "message": "Français",
+    "description": "French"
+  }
+}
