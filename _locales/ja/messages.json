@@ -1,0 +1,144 @@
+{
+  "extName": {
+    "message": "SSE Viewer BETA",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "この拡張機能は現在ベータテスト中です - DevToolsでサーバー送信イベント（SSE）をキャプチャして視覚化します",
+    "description": "Extension description"
+  },
+  "filterPlaceholder": {
+    "message": "URLまたはイベント名でフィルター（キーワードをサポート）",
+    "description": "Filter input placeholder"
+  },
+  "clearButton": {
+    "message": "クリア",
+    "description": "Clear button text"
+  },
+  "detailsTitle": {
+    "message": "詳細情報",
+    "description": "Details drawer title"
+  },
+  "tabData": {
+    "message": "データ",
+    "description": "Data tab"
+  },
+  "tabHeaders": {
+    "message": "ヘッダー",
+    "description": "Headers tab"
+  },
+  "tabRaw": {
+    "message": "生データ",
+    "description": "Raw tab"
+  },
+  "emptyState": {
+    "message": "SSEリクエストはありません",
+    "description": "Empty state message"
+  },
+  "connectionOpen": {
+    "message": "接続中",
+    "description": "Connection open tooltip"
+  },
+  "requestOverview": {
+    "message": "リクエスト概要",
+    "description": "Request overview title"
+  },
+  "messagesCount": {
+    "message": "合計 $COUNT$ メッセージ",
+    "description": "Messages count",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "10"
+      }
+    }
+  },
+  "labelUrl": {
+    "message": "URL",
+    "description": "URL label"
+  },
+  "labelStreamId": {
+    "message": "ストリームID",
+    "description": "Stream ID label"
+  },
+  "labelConnectionStatus": {
+    "message": "接続状態",
+    "description": "Connection status label"
+  },
+  "labelFirstTime": {
+    "message": "初回時刻",
+    "description": "First time label"
+  },
+  "labelLastTime": {
+    "message": "最終時刻",
+    "description": "Last time label"
+  },
+  "labelMessageCount": {
+    "message": "メッセージ数",
+    "description": "Message count label"
+  },
+  "labelTime": {
+    "message": "時刻",
+    "description": "Time label"
+  },
+  "labelType": {
+    "message": "タイプ",
+    "description": "Type label"
+  },
+  "labelEvent": {
+    "message": "イベント",
+    "description": "Event label"
+  },
+  "labelEventId": {
+    "message": "イベントID",
+    "description": "Event ID label"
+  },
+  "statusOpen": {
+    "message": "🟢 オープン",
+    "description": "Open status"
+  },
+  "statusClosed": {
+    "message": "⚫ クローズ",
+    "description": "Closed status"
+  },
+  "reconnecting": {
+    "message": "接続が切断されました。再接続中...",
+    "description": "Reconnecting message"
+  },
+  "reconnectFailed": {
+    "message": "接続に失敗しました：拡張機能を再読み込みしてください",
+    "description": "Reconnect failed message"
+  },
+  "contextInvalidated": {
+    "message": "拡張機能のコンテキストが無効になりました：拡張機能を再読み込みしてください",
+    "description": "Context invalidated message"
+  },
+  "contextInvalidatedError": {
+    "message": "拡張機能のコンテキストが無効になりました。拡張機能を再読み込みしてください。",
+    "description": "Context invalidated error message"
+  },
+  "connectionFailedError": {
+    "message": "接続に失敗しました：拡張機能のコンテキストが無効になりました。拡張機能を再読み込みするか、ページを更新してください。",
+    "description": "Connection failed error message"
+  },
+  "languageLabel": {
+    "message": "言語",
+    "description": "Language selector label"
+  },
+  "langZhCn": {
+    "message": "简体中文",
+    "description": "Simplified Chinese"
+  },
+  "langEn": {
+    "message": "English",
+    "description": "English"
+  },
+  "langJa": {
+    "message": "日本語",
+    "description": "Japanese"
+  },
+  "langFr": {
+    "message": "Français",
+    "description": "French"
+  }
+}
