@@ -16,12 +16,12 @@
 ## 🎯 What Problem Does It Solve?
 
 While Chrome's Network panel can display SSE messages, the debugging experience is far from ideal:
-• Difficult to quickly locate SSE requests
-• Message content scattered across multiple EventStream tabs
-• JSON requires manual copying to external tools for formatting
-• Multiple SSE connections mixed together, hard to distinguish
-• Cannot search through message history
-• History is lost after page refresh
+- Difficult to quickly locate SSE requests
+- Message content scattered across multiple EventStream tabs
+- JSON requires manual copying to external tools for formatting
+- Multiple SSE connections mixed together, hard to distinguish
+- Cannot search through message history
+- History is lost after page refresh
 
 SSE Viewer provides a dedicated SSE debugging panel, enabling you to view and analyze SSE messages more efficiently.
 
