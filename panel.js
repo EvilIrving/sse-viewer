@@ -1,9 +1,52 @@
 // panel.js
 // I18n helper functions
 const i18n = {
+  messages: {}, // Current language messages
+  currentLang: null,
+  
+  // Load messages for a specific language
+  async loadMessages(lang) {
+    try {
+      const url = chrome.runtime.getURL(`_locales/${lang}/messages.json`);
+      const response = await fetch(url);
+      const data = await response.json();
+      
+      // Convert Chrome i18n format to simple key-value pairs
+      const messages = {};
+      for (const [key, value] of Object.entries(data)) {
+        messages[key] = value.message;
+      }
+      
+      this.messages = messages;
+      this.currentLang = lang;
+      return messages;
+    } catch (e) {
+      console.warn(`Failed to load messages for ${lang}:`, e);
+      // Fallback to English
+      if (lang !== 'en') {
+        return await this.loadMessages('en');
+      }
+      return {};
+    }
+  },
+  
   // Get message with optional substitutions
   getMessage(key, substitutions) {
-    return chrome.i18n.getMessage(key, substitutions) || key;
+    let message = this.messages[key] || key;
+    
+    // Handle substitutions (e.g., $COUNT$ -> substitutions)
+    if (substitutions !== undefined) {
+      if (Array.isArray(substitutions)) {
+        substitutions.forEach((sub, index) => {
+          message = message.replace(`$${index + 1}`, sub);
+        });
+      } else {
+        // Simple single substitution
+        message = message.replace(/\$\w+\$/g, substitutions);
+      }
+    }
+    
+    return message;
   },
   
   // Initialize all elements with i18n attributes
@@ -34,12 +77,25 @@ const i18n = {
     }
     
     // Use browser UI language as default
-    return chrome.i18n.getUILanguage().replace('-', '_');
+    const browserLang = chrome.i18n.getUILanguage().replace('-', '_');
+    // Map browser language codes to our locale codes
+    const langMap = {
+      'zh_CN': 'zh_CN',
+      'zh': 'zh_CN',
+      'en': 'en',
+      'en_US': 'en',
+      'ja': 'ja',
+      'fr': 'fr'
+    };
+    return langMap[browserLang] || 'en';
   },
   
   // Set custom language (Beta feature only)
   async setLanguage(lang) {
     await chrome.storage.local.set({ customLanguage: lang });
+    // Load and apply new language
+    await this.loadMessages(lang);
+    this.init();
   }
 };
 
@@ -69,23 +125,12 @@ let reconnectAttempts = 0;
 const MAX_RECONNECT_ATTEMPTS = 10;
 const RECONNECT_INTERVAL = 3000; // 3秒
 
-// Initialize i18n
-i18n.init();
-
-// Initialize language selector
+// Initialize i18n and language selector
 (async () => {
   const currentLang = await i18n.getCurrentLanguage();
-  // Map browser language codes to our locale codes
-  const langMap = {
-    'zh_CN': 'zh_CN',
-    'zh': 'zh_CN',
-    'en': 'en',
-    'en_US': 'en',
-    'ja': 'ja',
-    'fr': 'fr'
-  };
-  const mappedLang = langMap[currentLang] || 'en';
-  langSelector.value = mappedLang;
+  await i18n.loadMessages(currentLang);
+  i18n.init();
+  langSelector.value = currentLang;
 })();
 
 // Language selector change handler (Beta feature)
@@ -93,9 +138,11 @@ langSelector.addEventListener('change', async (e) => {
   const selectedLang = e.target.value;
   await i18n.setLanguage(selectedLang);
   
-  // Reload to apply new language
-  // Note: In production version, this selector will be removed
-  window.location.reload();
+  // Re-render the UI to apply new language
+  render();
+  if (state.selectedRequest) {
+    renderDrawer();
+  }
 });
 
 function connect() {
