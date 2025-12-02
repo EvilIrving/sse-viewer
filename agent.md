@@ -177,6 +177,9 @@ SSE Viewer 是一个 Chrome DevTools 扩展，用于捕获和可视化网页中�
 
 **流程**:
 1. 调用 `chrome.devtools.panels.create` 创建 "SSE Viewer" 面板
+   - 第一个参数：面板名称
+   - 第二个参数：面板图标路径（`icons/devtools-icon.svg`）
+   - 第三个参数：面板 HTML 页面路径
 2. 监听 `onShown` 事件（面板首次显示时触发）
 3. 连接后台并发送 `init` 消息，传递 `chrome.devtools.inspectedWindow.tabId`
 
@@ -255,6 +258,29 @@ function getRequestKey(event) {
 ---
 
 ### 界面文件
+
+#### `icons/devtools-icon.svg` - DevTools 面板图标 ⭐
+**格式**: SVG 矢量图形  
+**设计风格**: 线框风格，符合 Chrome/Edge DevTools 视觉规范
+
+**图标设计**:
+- 电波/信号样式，象征 SSE (Server-Sent Events) 的实时推送特性
+- 中心圆点 + 四层同心波纹，代表消息从服务端向外辐射
+- 使用 `stroke` 而非 `fill`，符合 DevTools 的线性图标设计规范
+
+**主题自适应** ⭐:
+```css
+path, circle { 
+  stroke: #5f6368;  /* 浅色主题：深灰色 */
+}
+@media (prefers-color-scheme: dark) {
+  path, circle { stroke: #9aa0a6; }  /* 深色主题：浅灰色 */
+}
+```
+- **浅色主题**: `#5f6368` - Chrome DevTools 浅色主题的标准图标颜色
+- **深色主题**: `#9aa0a6` - Chrome DevTools 深色主题的标准图标颜色
+- 使用 `@media (prefers-color-scheme: dark)` 媒体查询自动检测用户主题偏好
+- 图标会根据 DevTools 主题自动切换颜色，与其他面板图标保持一致
 
 #### `panel.html`
 DevTools 面板的 HTML 结构：
@@ -521,7 +547,7 @@ OriginalReadableStream.prototype.getReader = function(options) {
 ---
 
 **最后更新**: 2025-12-02  
-**当前状态**: 已完成核心功能，支持主流 SSE 实现方式，提供类似 Network 面板的交互体验，采用 streamId 机制实现精准连接区分，**已实现完整的断线重连机制**，**已实现国际化支持（中英日法四种语言）**。
+**当前状态**: 已完成核心功能，支持主流 SSE 实现方式，提供类似 Network 面板的交互体验，采用 streamId 机制实现精准连接区分，**已实现完整的断线重连机制**，**已实现国际化支持（中英日法四种语言）**，**DevTools 面板图标已适配深色/浅色主题**。
 
 ---
 
