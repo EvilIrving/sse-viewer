@@ -122,6 +122,7 @@ let port;
 let isConnected = false;
 let reconnectTimer = null;
 let reconnectAttempts = 0;
+let contextInvalidated = false; // 扩展上下文是否已失效
 const MAX_RECONNECT_ATTEMPTS = 10;
 const RECONNECT_INTERVAL = 3000; // 3秒
 
@@ -146,9 +147,15 @@ langSelector.addEventListener('change', async (e) => {
 });
 
 function connect() {
+  // 如果扩展上下文已失效，不再尝试重连
+  if (contextInvalidated) {
+    return;
+  }
+  
   // 检查扩展上下文是否有效
   if (!chrome.runtime || !chrome.runtime.id) {
     console.error('[SSE Viewer Panel] Extension context is invalid, stopping reconnect attempts');
+    contextInvalidated = true;
     isConnected = false;
     list.innerHTML = `<div style="padding: 20px; color: #ff6b6b;">${i18n.getMessage('contextInvalidatedError')}</div>`;
     // 更新重连提示
@@ -232,8 +239,10 @@ function connect() {
     isConnected = false;
     
     // 如果是扩展上下文失效，不再尝试重连
-    if (e.message && e.message.includes('Extension context invalidated')) {
+    if (e.message && (e.message.includes('Extension context invalidated') || 
+                      e.message.includes('Cannot access a chrome API'))) {
       console.error('[SSE Viewer Panel] Extension context invalidated, stopping reconnect attempts');
+      contextInvalidated = true;
       list.innerHTML = `<div style="padding: 20px; color: #ff6b6b;">${i18n.getMessage('contextInvalidatedError')}</div>`;
       const notice = document.getElementById('reconnect-notice');
       if (notice) {
@@ -341,7 +350,33 @@ function groupEventsByRequest(events) {
     }
   }
   
-  return Array.from(groups.values()).sort((a, b) => b.firstTime - a.firstTime);
+  // 智能排序：AI 对话会话优先，需新使旧
+  const isAIChatRequest = (url) => {
+    return (
+      url.includes('chat_conversations') || url.includes('/chat/') ||
+      url.includes('/conversations/') && url.includes('/responses') ||
+      url.includes('/app-chat/conversations') ||
+      url.includes('conversations') && url.includes('openai') ||
+      url.includes('/v1/chat') ||
+      url.includes('anthropic') || url.includes('huggingface') || url.includes('together') ||
+      url.includes('bedrock') || url.includes('azure')
+    );
+  };
+  
+  const sortedGroups = Array.from(groups.values()).sort((a, b) => {
+    // 优先按 AI 请求排列
+    const aIsAI = isAIChatRequest(a.url);
+    const bIsAI = isAIChatRequest(b.url);
+    
+    if (aIsAI !== bIsAI) {
+      return aIsAI ? -1 : 1; // AI 请求优先（出现在前面）
+    }
+    
+    // 然后按时间排序（新需先）
+    return b.firstTime - a.firstTime;
+  });
+  
+  return sortedGroups;
 }
 
 function switchTab(tabName) {
@@ -372,7 +407,51 @@ function switchTab(tabName) {
 
 function render() {
   const ft = state.filterText;
+  
+  // 智能过滤：优先顫示 AI 对话请求，排除废旨请求
+  const isAIChatRequest = (url) => {
+    return (
+      // Claude
+      url.includes('chat_conversations') || url.includes('/chat/') ||
+      // Grok
+      url.includes('/conversations/') && url.includes('/responses') ||
+      url.includes('/app-chat/conversations') ||
+      // ChatGPT/OpenAI
+      url.includes('conversations') && url.includes('openai') ||
+      url.includes('/v1/chat') ||
+      // 其他 AI 服务
+      url.includes('anthropic') || url.includes('huggingface') || url.includes('together') ||
+      url.includes('bedrock') || url.includes('azure')
+    );
+  };
+  
+  const isNonStreamRequest = (url) => {
+    return !isAIChatRequest(url) && (
+      url.toLowerCase().includes('mixpanel') ||
+      url.toLowerCase().includes('segment') ||
+      url.toLowerCase().includes('google-analytics') ||
+      url.toLowerCase().includes('analytics') ||
+      url.toLowerCase().includes('facebook.com') ||
+      url.toLowerCase().includes('sentry') ||
+      url.toLowerCase().includes('amplitude') ||
+      url.toLowerCase().includes('intercom') ||
+      url.toLowerCase().includes('datadog') ||
+      url.toLowerCase().includes('newrelic') ||
+      url.toLowerCase().includes('stripe.com') ||
+      url.toLowerCase().includes('ads') ||
+      url.toLowerCase().includes('tracking') ||
+      url.toLowerCase().includes('pixel') ||
+      url.toLowerCase().includes('gravatar')
+    );
+  };
+  
   const filteredEvents = state.events.filter((e) => {
+    // 首先过滤掉明显的垃圾请求
+    if (isNonStreamRequest(e.url)) {
+      return false;
+    }
+    
+    // 然后应用用户的搜索过滤
     if (!ft) return true;
     const s = `${e.url} ${e.type} ${(e.payload?.event ?? '')}`.toLowerCase();
     return s.includes(ft);

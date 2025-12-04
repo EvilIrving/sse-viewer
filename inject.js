@@ -8,6 +8,63 @@
   window.__sse_viewer_inject_installed = true;
 
   function post(type, url, payload) {
+    // 智能过滤：排除明显不是 SSE 流的请求
+    // 但保留关键的 AI 对话请求
+    const isAIChatRequest = url && (
+      // Claude
+      url.includes('chat_conversations') || url.includes('/chat/') ||
+      // Grok
+      url.includes('/conversations/') && url.includes('/responses') ||
+      url.includes('/app-chat/conversations') ||
+      // ChatGPT/OpenAI
+      url.includes('conversations') && url.includes('openai') ||
+      url.includes('/v1/chat') ||
+      // 其他 AI 服务
+      url.includes('anthropic') || url.includes('huggingface') || url.includes('together') ||
+      url.includes('bedrock') || url.includes('azure')
+    );
+    
+    const shouldIgnore = url && !isAIChatRequest && (
+      // 过滤分析和追踪工具
+      url.includes('mixpanel') ||
+      url.includes('segment') ||
+      url.includes('google-analytics') ||
+      url.includes('analytics') ||
+      url.includes('facebook.com') ||
+      url.includes('sentry') ||
+      url.includes('amplitude') ||
+      url.includes('intercom') ||
+      url.includes('datadog') ||
+      url.includes('newrelic') ||
+      url.includes('bugsnag') ||
+      url.includes('rollbar') ||
+      url.includes('raygun') ||
+      url.includes('loggly') ||
+      url.includes('splunk') ||
+      url.includes('logs') && url.includes('elastic') ||
+      // 过滤广告和营销
+      url.includes('ads') ||
+      url.includes('advert') ||
+      url.includes('doubleclick') ||
+      url.includes('tracking') ||
+      url.includes('pixel') ||
+      // 过滤 CDN 和 静态资源
+      url.includes('cdn') ||
+      url.includes('static') ||
+      url.includes('.png') || url.includes('.jpg') || url.includes('.gif') || url.includes('.webp') ||
+      url.includes('.css') || url.includes('.js') && !url.includes('grok') && !url.includes('claude') && !url.includes('openai') ||
+      // 过滤其他无关服务
+      url.includes('stripe.com') ||
+      url.includes('slack') ||
+      url.includes('github.com/') ||
+      url.includes('gravatar') ||
+      url.includes('cloudflare')
+    );
+    
+    if (shouldIgnore && type !== 'warn') {
+      return; // 静默忽略这些请求
+    }
+    
     window.postMessage({ __sse_viewer: true, type, url, time: Date.now(), payload }, '*');
   }
   
@@ -92,8 +149,13 @@
               const chunk = decoder.decode(result.value, { stream: true });
               debug('Chunk received', { url, length: chunk.length, preview: chunk.substring(0, 100) });
               
-              // 检测是否为纯 JSON 流（每行一个 JSON 对象）
-              if (!chunk.includes('data:') && !chunk.includes('event:')) {
+              // 检测是否为纯 JSON 流或标准 SSE 格式
+              // 1. 纯JSON流：每行一个JSON对象，无 data:/event:/id:/retry: 前缀
+              // 2. 标准SSE：有 data:/event:/id:/retry: 等前缀
+              const hasSSEFormat = chunk.includes('data:') || chunk.includes('event:');
+              
+              if (!hasSSEFormat) {
+                // 纯JSON流或JSON数据
                 const lines = chunk.split(/\r?\n/).filter(l => l.trim());
                 for (const line of lines) {
                   let json = null;
@@ -102,8 +164,16 @@
                     post('message', url, {
                       streamId,
                       data: line,
-                      event: json.type || 'message',
+                      event: json.type || json.event || 'message',
                       json
+                    });
+                  } else if (line.trim()) {
+                    // 不是JSON的行，也记录元数据
+                    post('message', url, {
+                      streamId,
+                      data: line,
+                      event: 'message',
+                      json: null
                     });
                   }
                 }
@@ -156,7 +226,97 @@
     post('warn', 'getReader-init', { message: String(e) });
   }
 
-  // 3) 拦截 fetch 以标记 SSE 流
+  // 3) 拦截 XMLHttpRequest (XHR) - 查看是否使用 XHR 个性化流
+  try {
+    const OriginalXHR = window.XMLHttpRequest;
+    const XHRPrototype = OriginalXHR.prototype;
+    const origOpen = XHRPrototype.open;
+    const origSend = XHRPrototype.send;
+    
+    XHRPrototype.open = function(method, url, ...rest) {
+      this.__sse_viewer_url = url;
+      this.__sse_viewer_method = method;
+      return origOpen.apply(this, [method, url, ...rest]);
+    };
+    
+    XHRPrototype.send = function(...args) {
+      const xhr = this;
+      const url = xhr.__sse_viewer_url;
+      const method = xhr.__sse_viewer_method;
+      
+      debug('XHR send', { url, method });
+      
+      let receivedChunks = '';
+      let hasStartedReceiving = false;
+      let streamOpened = false;
+      
+      // 方法 1: 通过 onreadystatechange 监听
+      const origOnReadyStateChange = xhr.onreadystatechange;
+      const handleReadyStateChange = function() {
+        if (xhr.readyState === 2) {
+          const ct = xhr.getResponseHeader('content-type') || '';
+          if ((ct.includes('application/json') || ct.includes('text/event-stream')) && !streamOpened) {
+            streamOpened = true;
+            debug('XHR streaming detected', { url, contentType: ct });
+            post('stream-open', url, { type: 'xhr-stream', method: method });
+          }
+        } else if (xhr.readyState === 3) {
+          hasStartedReceiving = true;
+          const responseText = xhr.responseText;
+          const newData = responseText.substring(receivedChunks.length);
+          
+          if (newData) {
+            debug('XHR chunk received', { url, length: newData.length });
+            
+            const lines = newData.split(/\r?\n/).filter(l => l.trim());
+            for (const line of lines) {
+              let json = null;
+              try { json = JSON.parse(line); } catch {}
+              if (json) {
+                post('message', url, {
+                  data: line,
+                  event: json.type || json.event || 'message',
+                  json
+                });
+              }
+            }
+          }
+          receivedChunks = responseText;
+        } else if (xhr.readyState === 4) {
+          if (streamOpened) {
+            debug('XHR stream closed', { url });
+            post('stream-close', url, {});
+          }
+        }
+        
+        if (origOnReadyStateChange) {
+          return origOnReadyStateChange.apply(this, arguments);
+        }
+      };
+      
+      xhr.onreadystatechange = handleReadyStateChange;
+      
+      // 方法 2: 通过 addEventListener 监听（某些框架用这个）
+      const origAddEventListener = xhr.addEventListener;
+      xhr.addEventListener = function(type, listener, ...args) {
+        if (type === 'readystatechange') {
+          return origAddEventListener.call(this, type, function() {
+            handleReadyStateChange.call(xhr);
+            listener.call(xhr);
+          }, ...args);
+        }
+        return origAddEventListener.apply(this, arguments);
+      };
+      
+      return origSend.apply(this, args);
+    };
+    
+    debug('XMLHttpRequest intercepted');
+  } catch (e) {
+    post('warn', 'xhr-init', { message: String(e) });
+  }
+
+  // 4) 拦截 fetch 以标记 SSE 流
   try {
     const origFetch = window.fetch;
     if (typeof origFetch === 'function') {
@@ -166,12 +326,67 @@
         
         const res = await origFetch(...args);
         const ct = res.headers?.get?.('content-type') || '';
+        const isStreamLike = ct.includes('text/event-stream') || ct.includes('application/json');
         
-        // 检测 SSE 流并标记
-        if (ct.includes('text/event-stream') && res.body) {
-          debug('SSE stream detected, marking body', url);
-          // 在 ReadableStream 对象上标记 URL，供 getReader 拦截使用
+        if (isStreamLike && res.body) {
+          debug('Stream detected (SSE or JSON)', { url, contentType: ct });
+          
+          // 标记 ReadableStream
           res.body.__sse_viewer_url = url;
+          
+          // 拦截 .text() 方法
+          const origText = res.text.bind(res);
+          res.text = async function() {
+            debug('Fetch response.text() called', { url });
+            post('stream-open', url, { type: 'fetch-text' });
+            
+            try {
+              const text = await origText();
+              debug('Fetch response.text() completed', { url, length: text.length });
+              
+              // 尝试解析为行分割的 JSON
+              const lines = text.split(/\r?\n/).filter(l => l.trim());
+              for (const line of lines) {
+                let json = null;
+                try { json = JSON.parse(line); } catch {}
+                if (json) {
+                  post('message', url, {
+                    data: line,
+                    event: json.type || json.event || 'message',
+                    json
+                  });
+                }
+              }
+              
+              post('stream-close', url, { type: 'fetch-text' });
+              return text;
+            } catch (e) {
+              debug('Fetch response.text() error', { url, error: String(e) });
+              throw e;
+            }
+          };
+          
+          // 拦截 .json() 方法
+          const origJson = res.json.bind(res);
+          res.json = async function() {
+            debug('Fetch response.json() called', { url });
+            post('stream-open', url, { type: 'fetch-json' });
+            
+            try {
+              const json = await origJson();
+              debug('Fetch response.json() completed', { url });
+              post('message', url, {
+                data: JSON.stringify(json),
+                event: 'message',
+                json
+              });
+              post('stream-close', url, { type: 'fetch-json' });
+              return json;
+            } catch (e) {
+              debug('Fetch response.json() error', { url, error: String(e) });
+              throw e;
+            }
+          };
         }
         
         return res;
@@ -184,4 +399,56 @@
   
   debug('SSE Viewer injection complete');
   post('init', 'SSE Viewer', { message: 'Interceptors installed successfully' });
+  
+  // 5) 作为最后的汞殿：收集所有 console.log/warn 流
+  // 有些框架可能在接收到数据时会打印，我们可以捕获
+  try {
+    const origLog = window.console.log;
+    const origWarn = window.console.warn;
+    const origError = window.console.error;
+    
+    // 检查是否是流数据日志
+    function checkIfStreamData(args) {
+      for (const arg of args) {
+        if (typeof arg === 'string' || typeof arg === 'object') {
+          const str = String(arg);
+          // 检查是否看起像是 JSON 或 SSE 数据
+          if (str.includes('data:') || str.includes('event:') || 
+              (str.startsWith('{') && str.endsWith('}')) ||
+              str.includes('\"type\"') || str.includes('\"token\"')) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    
+    window.console.log = function(...args) {
+      if (checkIfStreamData(args)) {
+        debug('Console.log stream data detected', args[0]);
+        post('message', 'console.log', {
+          data: String(args[0]),
+          event: 'console-log',
+          json: typeof args[0] === 'object' ? args[0] : null
+        });
+      }
+      return origLog.apply(console, args);
+    };
+    
+    window.console.warn = function(...args) {
+      if (checkIfStreamData(args)) {
+        debug('Console.warn stream data detected', args[0]);
+        post('message', 'console.warn', {
+          data: String(args[0]),
+          event: 'console-warn',
+          json: typeof args[0] === 'object' ? args[0] : null
+        });
+      }
+      return origWarn.apply(console, args);
+    };
+    
+    debug('Console logging intercepted');
+  } catch (e) {
+    post('warn', 'console-init', { message: String(e) });
+  }
 })();

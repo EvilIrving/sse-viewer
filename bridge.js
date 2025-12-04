@@ -11,14 +11,23 @@
   let isConnected = false;
   let reconnectTimer = null;
   let messageQueue = []; // 消息队列，用于断线时缓存
+  let contextInvalidated = false; // 扩展上下文是否已失效
   const MAX_QUEUE_SIZE = 100;
 
   function connect() {
+    // 如果扩展上下文已失效，不再尝试重连
+    if (contextInvalidated) {
+      return;
+    }
+    
     // 检查扩展上下文是否有效
     if (!chrome.runtime || !chrome.runtime.id) {
       console.error('[SSE Viewer] Extension context is invalid, stopping reconnect attempts');
+      contextInvalidated = true;
       isConnected = false;
       port = null;
+      // 清空消息队列，因为无法再发送
+      messageQueue = [];
       return;
     }
     
@@ -67,8 +76,12 @@
       port = null;
       
       // 如果是扩展上下文失效，不再尝试重连
-      if (err.message && err.message.includes('Extension context invalidated')) {
+      if (err.message && (err.message.includes('Extension context invalidated') || 
+                          err.message.includes('Cannot access a chrome API'))) {
         console.error('[SSE Viewer] Extension context invalidated, stopping reconnect attempts');
+        contextInvalidated = true;
+        // 清空消息队列防止稍后接收错误的重连
+        messageQueue = [];
         return;
       }
       
@@ -82,6 +95,10 @@
 
   window.addEventListener('message', (e) => {
     if (e.source !== window) return;
+    // 如果扩展已失效，不处理消息
+    if (contextInvalidated) {
+      return;
+    }
     const data = e.data;
     if (data && data.__sse_viewer) {
       if (isConnected && port) {
@@ -96,7 +113,7 @@
           }
         }
       } else {
-        // 未连接时，将消息加入队列
+        // 未连接時，将消息加入队列
         if (messageQueue.length < MAX_QUEUE_SIZE) {
           messageQueue.push(data);
         } else {
