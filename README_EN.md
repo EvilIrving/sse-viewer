@@ -1,4 +1,4 @@
-# SSE Viewer - Dedicated Debugging Panel for SSE Messages
+# SSE Inspector - Dedicated Debugging Panel for SSE Messages
 
 [简体中文](README.md) | English
 
@@ -6,12 +6,19 @@
 
 ## 📑 Table of Contents
 
-- [What Problem Does It Solve?](#-what-problem-does-it-solve)
-- [Feature Comparison](#-feature-comparison-sse-viewer-vs-network-panel)
-- [How to Use](#-how-to-use)
-- [Privacy and Security](#-privacy-and-security)
-- [Who Is It For](#-who-is-it-for)
-- [Feedback and Support](#-feedback-and-support)
+- [SSE Inspector - Dedicated Debugging Panel for SSE Messages](#sse-inspector---dedicated-debugging-panel-for-sse-messages)
+  - [📑 Table of Contents](#-table-of-contents)
+  - [🎯 What Problem Does It Solve?](#-what-problem-does-it-solve)
+  - [✨ Feature Comparison: SSE Inspector vs Network Panel](#-feature-comparison-sse-inspector-vs-network-panel)
+  - [🚀 How to Use](#-how-to-use)
+    - [1️⃣ Open DevTools](#1️⃣-open-devtools)
+    - [2️⃣ Switch to SSE Inspector Tab](#2️⃣-switch-to-sse-inspector-tab)
+    - [3️⃣ Refresh the Page](#3️⃣-refresh-the-page)
+  - [🔒 Privacy and Security](#-privacy-and-security)
+    - [Permission Details](#permission-details)
+    - [📊 Data Flow](#-data-flow)
+  - [👥 Who Is It For](#-who-is-it-for)
+  - [💬 Feedback and Support](#-feedback-and-support)
 
 ## 🎯 What Problem Does It Solve?
 
@@ -23,12 +30,12 @@ While Chrome's Network panel can display SSE messages, the debugging experience 
 - Cannot search through message history
 - History is lost after page refresh
 
-SSE Viewer provides a dedicated SSE debugging panel, enabling you to view and analyze SSE messages more efficiently.
+SSE Inspector provides a dedicated SSE debugging panel, enabling you to view and analyze SSE messages more efficiently.
 
 
-## ✨ Feature Comparison: SSE Viewer vs Network Panel
+## ✨ Feature Comparison: SSE Inspector vs Network Panel
 
-| Feature | Network Panel | SSE Viewer |
+| Feature | Network Panel | SSE Inspector |
 |---------|---------------|------------|
 | 📍 **Finding SSE Requests** | ⚠️ Manual searching through numerous requests | ✅ Automatically aggregated in dedicated SSE panel |
 | 📍 **Viewing Message Content** | ⚠️ Click through EventStream records one by one | ✅ All messages displayed chronologically |
@@ -43,8 +50,8 @@ SSE Viewer provides a dedicated SSE debugging panel, enabling you to view and an
 ### 1️⃣ Open DevTools
 Press `F12`, or right-click on the page and select "**Inspect**"
 
-### 2️⃣ Switch to SSE Viewer Tab
-Find "**SSE Viewer**" in the DevTools tab bar (alongside Network, Console, etc.)
+### 2️⃣ Switch to SSE Inspector Tab
+Find "**SSE Inspector**" in the DevTools tab bar (alongside Network, Console, etc.)
 
 ### 3️⃣ Refresh the Page
 The panel will automatically capture and display all SSE messages from the current page
@@ -58,7 +65,7 @@ This extension strictly follows the **principle of minimum privilege**, requesti
 
 | Permission | Purpose | Scope |
 |------------|---------|-------|
-| `activeTab` | Access to current active tab | Only active when you open DevTools and switch to SSE Viewer |
+| `activeTab` | Access to current active tab | Only active when you open DevTools and switch to SSE Inspector |
 | `scripting` | Script injection | To capture SSE messages, all processing is done locally |
 | `storage` | Local storage | Save minimal UI settings, does not involve business data |
 

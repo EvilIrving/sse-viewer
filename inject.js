@@ -2,7 +2,7 @@
 (function () {
   // 防止重复注入
   if (window.__sse_viewer_inject_installed) {
-    console.warn('[SSE Viewer] Inject already installed, skipping');
+    console.warn('[SSE Inspector] Inject already installed, skipping');
     return;
   }
   window.__sse_viewer_inject_installed = true;
@@ -71,7 +71,7 @@
   // 调试日志（可通过 sessionStorage 控制）
   const enableDebug = sessionStorage.getItem('sse-viewer-debug') === 'true';
   function debug(msg, data) {
-    if (enableDebug) console.log('[SSE Viewer]', msg, data);
+    if (enableDebug) console.log('[SSE Inspector]', msg, data);
   }
 
   // 1) 拦截原生 EventSource
@@ -397,8 +397,8 @@
     post('warn', 'fetch-init', { message: String(e) });
   }
   
-  debug('SSE Viewer injection complete');
-  post('init', 'SSE Viewer', { message: 'Interceptors installed successfully' });
+  debug('SSE Inspector injection complete');
+  post('init', 'SSE Inspector', { message: 'Interceptors installed successfully' });
   
   // 5) 作为最后的汞殿：收集所有 console.log/warn 流
   // 有些框架可能在接收到数据时会打印，我们可以捕获

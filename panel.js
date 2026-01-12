@@ -154,7 +154,7 @@ function connect() {
   
   // 检查扩展上下文是否有效
   if (!chrome.runtime || !chrome.runtime.id) {
-    console.error('[SSE Viewer Panel] Extension context is invalid, stopping reconnect attempts');
+    console.error('[SSE Inspector Panel] Extension context is invalid, stopping reconnect attempts');
     contextInvalidated = true;
     isConnected = false;
     list.innerHTML = `<div style="padding: 20px; color: #ff6b6b;">${i18n.getMessage('contextInvalidatedError')}</div>`;
@@ -172,7 +172,7 @@ function connect() {
     isConnected = true;
     reconnectAttempts = 0;
     
-    console.log('[SSE Viewer Panel] Connected to background');
+    console.log('[SSE Inspector Panel] Connected to background');
     
     port.onMessage.addListener((msg) => {
       if (!msg || !msg.__sse_viewer) return;
@@ -186,9 +186,9 @@ function connect() {
       // 检查是否是扩展上下文失效导致的断开
       const lastError = chrome.runtime.lastError;
       if (lastError) {
-        console.warn('[SSE Viewer Panel] Port disconnected:', lastError.message);
+        console.warn('[SSE Inspector Panel] Port disconnected:', lastError.message);
       } else {
-        console.warn('[SSE Viewer Panel] Port disconnected, will attempt reconnect');
+        console.warn('[SSE Inspector Panel] Port disconnected, will attempt reconnect');
       }
       
       // 显示重连提示，但不影响已有数据
@@ -207,10 +207,10 @@ function connect() {
       reconnectTimer = setTimeout(() => {
         if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
           reconnectAttempts++;
-          console.log(`[SSE Viewer Panel] Reconnect attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
+          console.log(`[SSE Inspector Panel] Reconnect attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}`);
           connect();
         } else {
-          console.error('[SSE Viewer Panel] Max reconnect attempts reached');
+          console.error('[SSE Inspector Panel] Max reconnect attempts reached');
           const notice = document.getElementById('reconnect-notice');
           if (notice) {
             notice.style.background = '#f44336';
@@ -230,18 +230,18 @@ function connect() {
         notice.remove();
       }
     } catch (err) {
-      console.error('[SSE Viewer Panel] Failed to send init message:', err);
+      console.error('[SSE Inspector Panel] Failed to send init message:', err);
       isConnected = false;
       throw err;
     }
   } catch (e) {
-    console.error('[SSE Viewer Panel] Failed to connect to background:', e);
+    console.error('[SSE Inspector Panel] Failed to connect to background:', e);
     isConnected = false;
     
     // 如果是扩展上下文失效，不再尝试重连
     if (e.message && (e.message.includes('Extension context invalidated') || 
                       e.message.includes('Cannot access a chrome API'))) {
-      console.error('[SSE Viewer Panel] Extension context invalidated, stopping reconnect attempts');
+      console.error('[SSE Inspector Panel] Extension context invalidated, stopping reconnect attempts');
       contextInvalidated = true;
       list.innerHTML = `<div style="padding: 20px; color: #ff6b6b;">${i18n.getMessage('contextInvalidatedError')}</div>`;
       const notice = document.getElementById('reconnect-notice');
