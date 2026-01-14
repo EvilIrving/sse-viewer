@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Privacy Policy - SSE Inspector</title>
+  <title>SSE Inspector - SSE Message Debugging Panel</title>
   <style>
     * {
       margin: 0;
@@ -72,11 +72,351 @@
       font-size: 18px;
     }
 
+    .nav-links {
+      display: flex;
+      gap: 8px;
+    }
+
+    .nav-link {
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 14px;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+      background: none;
+      font-family: inherit;
+    }
+
+    .nav-link:hover {
+      color: var(--text-primary);
+      background: var(--bg-card);
+    }
+
+    .nav-link.active {
+      color: var(--primary);
+      background: rgba(34, 158, 217, 0.1);
+    }
+
     /* Main Content */
     main {
       padding-top: 64px;
     }
 
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    /* Landing Page */
+    .hero {
+      text-align: center;
+      padding: 100px 20px 80px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .hero h1 {
+      font-size: 56px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, var(--primary), #64d2ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 20px;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 60px;
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-dark);
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+    }
+
+    /* Problem Section */
+    .problem {
+      padding: 60px 20px;
+      background: var(--bg-card);
+    }
+
+    .problem h2 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 40px;
+    }
+
+    .problem-list {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .problem-item {
+      display: flex;
+      gap: 16px;
+      padding: 20px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .problem-item:last-child {
+      border-bottom: none;
+    }
+
+    .problem-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .problem-text {
+      color: var(--text-secondary);
+    }
+
+    .problem-text strong {
+      color: var(--text-primary);
+    }
+
+    /* Features Comparison */
+    .comparison {
+      padding: 80px 20px;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .comparison h2 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 40px;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--bg-card);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .comparison-table th,
+    .comparison-table td {
+      padding: 16px 20px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .comparison-table th {
+      background: var(--bg-card);
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .comparison-table td {
+      color: var(--text-secondary);
+    }
+
+    .comparison-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .comparison-table th:first-child,
+    .comparison-table td:first-child {
+      width: 50%;
+    }
+
+    .comparison-table th:nth-child(2),
+    .comparison-table td:nth-child(2) {
+      width: 25%;
+      text-align: center;
+    }
+
+    .comparison-table th:nth-child(3),
+    .comparison-table td:nth-child(3) {
+      width: 25%;
+      text-align: center;
+    }
+
+    .status-good {
+      color: #4ade80;
+    }
+
+    .status-bad {
+      color: #f87171;
+    }
+
+    .status-ok {
+      color: #fbbf24;
+    }
+
+    /* Features */
+    .features {
+      padding: 80px 20px;
+      background: var(--bg-card);
+    }
+
+    .features h2 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 60px;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .feature-card {
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      transition: all 0.3s;
+    }
+
+    .feature-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-4px);
+    }
+
+    .feature-icon {
+      font-size: 40px;
+      margin-bottom: 20px;
+    }
+
+    .feature-card h3 {
+      font-size: 20px;
+      margin-bottom: 12px;
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Target Audience */
+    .audience {
+      padding: 80px 20px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .audience h2 {
+      text-align: center;
+      font-size: 32px;
+      margin-bottom: 40px;
+    }
+
+    .audience-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+    }
+
+    .audience-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .audience-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .audience-card h4 {
+      margin-bottom: 8px;
+    }
+
+    .audience-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    /* Privacy Section */
+    .privacy-banner {
+      padding: 60px 20px;
+      background: var(--bg-card);
+      text-align: center;
+    }
+
+    .privacy-banner h2 {
+      font-size: 28px;
+      margin-bottom: 16px;
+    }
+
+    .privacy-banner p {
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin: 0 auto 24px;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 40px 20px;
+      border-top: 1px solid var(--border);
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Privacy Page */
     .privacy-container {
       max-width: 800px;
       margin: 0 auto;
@@ -159,7 +499,6 @@
       color: var(--text-secondary);
     }
 
-    /* Contact Section */
     .contact-section {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -187,32 +526,40 @@
       text-decoration: underline;
     }
 
-    /* Footer */
-    footer {
-      text-align: center;
-      padding: 40px 20px;
-      border-top: 1px solid var(--border);
-      color: var(--text-secondary);
-      font-size: 14px;
-    }
-
-    footer a {
-      color: var(--primary);
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
-    }
-
     /* Responsive */
     @media (max-width: 768px) {
-      .privacy-container h1 {
-        font-size: 32px;
+      .hero h1 {
+        font-size: 36px;
       }
 
-      .privacy-container {
-        padding: 40px 20px 60px;
+      .hero p {
+        font-size: 16px;
+      }
+
+      .problem h2,
+      .comparison h2,
+      .features h2,
+      .audience h2 {
+        font-size: 24px;
+      }
+
+      .comparison-table {
+        font-size: 14px;
+      }
+
+      .comparison-table th,
+      .comparison-table td {
+        padding: 12px;
+      }
+
+      .cta-buttons {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      .btn {
+        width: 100%;
+        max-width: 280px;
       }
     }
   </style>
@@ -220,154 +567,353 @@
 <body>
   <nav>
     <div class="nav-container">
-      <a href="#" class="logo">
+      <a href="#" class="logo" onclick="showPage('landing')">
         <span class="logo-icon">◉</span>
         SSE Inspector
       </a>
+      <div class="nav-links">
+        <button class="nav-link active" data-page="landing" onclick="showPage('landing')">Home</button>
+        <button class="nav-link" data-page="privacy" onclick="showPage('privacy')">Privacy</button>
+      </div>
     </div>
   </nav>
 
   <main>
-    <div class="privacy-container">
-      <h1>Privacy Policy</h1>
-      <p class="last-updated">Last Updated: January 14, 2026</p>
+    <!-- Landing Page -->
+    <div id="landing" class="page active">
+      <section class="hero">
+        <h1>SSE Inspector</h1>
+        <p>Chrome DevTools extension specifically designed for Server-Sent Events (SSE), making SSE debugging more efficient and convenient.</p>
+        <div class="cta-buttons">
+          <a href="https://chromewebstore.google.com/detail/okikpfighlcneojgdjidjnmfoaijnkio?utm_source=item-share-cb" class="btn btn-primary" target="_blank">Add to Chrome - It's Free</a>
+          <a href="https://github.com/EvilIrving/send-to-tg" class="btn btn-secondary" target="_blank">View on GitHub</a>
+        </div>
+      </section>
 
-      <div class="tldr">
-        <strong>TL;DR:</strong> SSE Inspector operates entirely locally in your browser. We do not collect, store, or transmit any of your personal data to external servers.
-      </div>
+      <section class="problem">
+        <h2>What Problem Does It Solve?</h2>
+        <div class="problem-list">
+          <div class="problem-item">
+            <span class="problem-icon">⚠️</span>
+            <p class="problem-text"><strong>Difficult to find SSE requests</strong> - Manually searching through numerous requests in the Network panel is time-consuming.</p>
+          </div>
+          <div class="problem-item">
+            <span class="problem-icon">⚠️</span>
+            <p class="problem-text"><strong>Message content scattered</strong> - SSE messages are spread across multiple EventStream records, making it hard to get a complete picture.</p>
+          </div>
+          <div class="problem-item">
+            <span class="problem-icon">⚠️</span>
+            <p class="problem-text"><strong>JSON formatting trouble</strong> - Need to manually copy content and paste it into another tool to format JSON.</p>
+          </div>
+          <div class="problem-item">
+            <span class="problem-icon">⚠️</span>
+            <p class="problem-text"><strong>Multiple connections mixed</strong> - Multiple SSE connections are mixed together, making them hard to distinguish.</p>
+          </div>
+          <div class="problem-item">
+            <span class="problem-icon">⚠️</span>
+            <p class="problem-text"><strong>Cannot search history</strong> - No support for searching through historical messages.</p>
+          </div>
+          <div class="problem-item">
+            <span class="problem-icon">⚠️</span>
+            <p class="problem-text"><strong>History lost on refresh</strong> - Historical records are lost after refreshing the page.</p>
+          </div>
+        </div>
+      </section>
 
-      <div class="privacy-section">
-        <h2>Introduction</h2>
-        <p>
-          Welcome to SSE Inspector. This Privacy Policy explains how we handle your information when you use our browser extension.
-          We are committed to protecting your privacy and ensuring transparency about our data practices.
-        </p>
-      </div>
+      <section class="comparison">
+        <h2>SSE Inspector vs Network Panel</h2>
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Network Panel</th>
+              <th>SSE Inspector</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Find SSE Requests</td>
+              <td class="status-ok">⚠️ Manual search</td>
+              <td class="status-good">✅ Auto aggregated</td>
+            </tr>
+            <tr>
+              <td>View Message Content</td>
+              <td class="status-ok">⚠️ Click each record</td>
+              <td class="status-good">✅ Chronological view</td>
+            </tr>
+            <tr>
+              <td>Format JSON</td>
+              <td class="status-bad">❌ Manual copy</td>
+              <td class="status-good">✅ Auto-format</td>
+            </tr>
+            <tr>
+              <td>Multiple Connections</td>
+              <td class="status-bad">❌ Mixed together</td>
+              <td class="status-good">✅ Grouped clearly</td>
+            </tr>
+            <tr>
+              <td>Search Messages</td>
+              <td class="status-bad">❌ Not supported</td>
+              <td class="status-good">✅ Full search</td>
+            </tr>
+            <tr>
+              <td>History Retention</td>
+              <td class="status-ok">⚠️ Lost on refresh</td>
+              <td class="status-good">✅ Preserved history</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
 
-      <div class="privacy-section">
-        <h2>Information We Collect</h2>
-        <p>SSE Inspector is designed with privacy as a core principle. The extension:</p>
-        <ul>
-          <li><strong>Does not collect personal information</strong> - We do not gather any identifiable information about you</li>
-          <li><strong>Does not track your browsing history</strong> - Your web activity remains completely private</li>
-          <li><strong>Does not use analytics or tracking tools</strong> - No third-party services monitor your usage</li>
-          <li><strong>Processes data locally only</strong> - All SSE stream monitoring happens within your browser</li>
-        </ul>
-      </div>
+      <section class="features">
+        <h2>Key Features</h2>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon">📍</div>
+            <h3>Auto-Aggregation</h3>
+            <p>Automatically collects all SSE requests and displays them in a dedicated panel for easy access.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">📜</div>
+            <h3>Chronological View</h3>
+            <p>All messages are displayed in time order, giving you a complete picture of the data flow.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">✨</div>
+            <h3>JSON Auto-Format</h3>
+            <p>Click any message to automatically format it into readable JSON with proper indentation.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔀</div>
+            <h3>Connection Grouping</h3>
+            <p>Multiple SSE connections are automatically grouped and clearly labeled for easy distinction.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">🔍</div>
+            <h3>Message Search</h3>
+            <p>Search through all historical messages with keyword filtering.</p>
+          </div>
+          <div class="feature-card">
+            <div class="feature-icon">💾</div>
+            <h3>History Persistence</h3>
+            <p>Message history is preserved in the panel, even after page refreshes.</p>
+          </div>
+        </div>
+      </section>
 
-      <div class="privacy-section">
-        <h2>How We Use Information</h2>
-        <p>The extension accesses the following data solely for its core functionality:</p>
+      <section class="audience">
+        <h2>Who Is It For?</h2>
+        <div class="audience-grid">
+          <div class="audience-card">
+            <div class="audience-icon">👨‍💻</div>
+            <h4>Frontend Developers</h4>
+            <p>Debug SSE implementations and monitor real-time data streams.</p>
+          </div>
+          <div class="audience-card">
+            <div class="audience-icon">⚙️</div>
+            <h4>Backend Developers</h4>
+            <p>Verify SSE endpoint responses and troubleshoot streaming issues.</p>
+          </div>
+          <div class="audience-card">
+            <div class="audience-icon">🔬</div>
+            <h4>API Testers</h4>
+            <p>Inspect SSE APIs and validate real-time data delivery.</p>
+          </div>
+          <div class="audience-card">
+            <div class="audience-icon">📱</div>
+            <h4>Mobile Developers</h4>
+            <p>Monitor SSE connections in web views and hybrid apps.</p>
+          </div>
+        </div>
+      </section>
 
-        <h3>Network Request Monitoring</h3>
-        <p>
-          SSE Inspector monitors network requests to identify and display Server-Sent Events (SSE) streams.
-          This monitoring occurs entirely within your browser's developer tools and is temporary—data is only held in memory while the DevTools panel is open.
-        </p>
+      <section class="privacy-banner">
+        <h2>Privacy & Security</h2>
+        <p>SSE Inspector operates entirely locally in your browser. No data collection, no tracking, no external servers.</p>
+        <a href="#" class="btn btn-secondary" onclick="showPage('privacy')">Learn More</a>
+      </section>
+    </div>
 
-        <h3>Local Storage</h3>
-        <p>
-          The extension may use browser local storage to save your preferences and settings.
-          This data never leaves your device and is stored securely within your browser's sandboxed environment.
-        </p>
-      </div>
+    <!-- Privacy Page -->
+    <div id="privacy" class="page">
+      <div class="privacy-container">
+        <h1>Privacy Policy</h1>
+        <p class="last-updated">Last Updated: January 14, 2026</p>
 
-      <div class="privacy-section">
-        <h2>Data Sharing and Third Parties</h2>
-        <p>We want to be crystal clear:</p>
-        <ul>
-          <li>We do not sell your data</li>
-          <li>We do not share your data with third parties</li>
-          <li>We do not have servers that receive your data</li>
-          <li>No external analytics or advertising services are integrated</li>
-        </ul>
-        <p>
-          Since all processing happens locally in your browser, there is no data transmission to any external entity.
-        </p>
-      </div>
-
-      <div class="privacy-section">
-        <h2>Permissions Explained</h2>
-        <p>SSE Inspector requires certain browser permissions to function. Here's why:</p>
-
-        <div class="permission-card">
-          <h4>DevTools Permission</h4>
-          <p>Allows the extension to create a panel in your browser's developer tools where SSE streams are displayed. This permission is essential for the core functionality but does not grant access to your browsing data.</p>
+        <div class="tldr">
+          <strong>TL;DR:</strong> SSE Inspector operates entirely locally in your browser. We do not collect, store, or transmit any of your personal data to external servers.
         </div>
 
-        <div class="permission-card">
-          <h4>WebRequest Permission</h4>
-          <p>Enables monitoring of network requests to identify SSE connections. This permission operates under the principle of minimum privilege—it only observes requests, does not modify them, and does not transmit data externally.</p>
+        <div class="privacy-section">
+          <h2>Introduction</h2>
+          <p>
+            Welcome to SSE Inspector. This Privacy Policy explains how we handle your information when you use our browser extension.
+            We are committed to protecting your privacy and ensuring transparency about our data practices.
+          </p>
         </div>
 
-        <div class="permission-card">
-          <h4>ActiveTab Permission</h4>
-          <p>Allows interaction with the currently active tab only when you explicitly open the DevTools panel. This ensures the extension cannot access tabs you're not actively working with.</p>
+        <div class="privacy-section">
+          <h2>Information We Collect</h2>
+          <p>SSE Inspector is designed with privacy as a core principle. The extension:</p>
+          <ul>
+            <li><strong>Does not collect personal information</strong> - We do not gather any identifiable information about you</li>
+            <li><strong>Does not track your browsing history</strong> - Your web activity remains completely private</li>
+            <li><strong>Does not use analytics or tracking tools</strong> - No third-party services monitor your usage</li>
+            <li><strong>Processes data locally only</strong> - All SSE stream monitoring happens within your browser</li>
+          </ul>
         </div>
-      </div>
 
-      <div class="privacy-section">
-        <h2>Data Security</h2>
-        <p>
-          All data processed by SSE Inspector remains within the secure, sandboxed environment of your browser.
-          We follow browser extension security best practices to ensure:
-        </p>
-        <ul>
-          <li>No unauthorized access to your data</li>
-          <li>Isolation from other extensions and web pages</li>
-          <li>Compliance with browser security policies</li>
-        </ul>
-      </div>
+        <div class="privacy-section">
+          <h2>How We Use Information</h2>
+          <p>The extension accesses the following data solely for its core functionality:</p>
 
-      <div class="privacy-section">
-        <h2>Your Rights and Control</h2>
-        <p>You have complete control over the extension:</p>
-        <ul>
-          <li><strong>Disable or Remove:</strong> You can disable or uninstall the extension at any time through your browser settings</li>
-          <li><strong>Clear Data:</strong> You can clear any locally stored preferences by removing the extension</li>
-          <li><strong>Transparency:</strong> The extension's source code behavior is transparent through the browser's extension inspection tools</li>
-        </ul>
-      </div>
+          <h3>Network Request Monitoring</h3>
+          <p>
+            SSE Inspector monitors network requests to identify and display Server-Sent Events (SSE) streams.
+            This monitoring occurs entirely within your browser's developer tools and is temporary—data is only held in memory while the DevTools panel is open.
+          </p>
 
-      <div class="privacy-section">
-        <h2>Children's Privacy</h2>
-        <p>
-          SSE Inspector is a developer tool and is not directed at children under 13 years of age.
-          We do not knowingly collect information from children. Since we don't collect any personal information at all,
-          this risk is inherently minimized.
-        </p>
-      </div>
+          <h3>Local Storage</h3>
+          <p>
+            The extension may use browser local storage to save your preferences and settings.
+            This data never leaves your device and is stored securely within your browser's sandboxed environment.
+          </p>
+        </div>
 
-      <div class="privacy-section">
-        <h2>Changes to This Privacy Policy</h2>
-        <p>
-          We may update this Privacy Policy from time to time to reflect changes in the extension or legal requirements.
-          When we do, we will update the "Last Updated" date at the top of this page. We encourage you to review this policy periodically.
-        </p>
-        <p>
-          Continued use of the extension after changes constitutes acceptance of the updated policy.
-        </p>
-      </div>
+        <div class="privacy-section">
+          <h2>Data Sharing and Third Parties</h2>
+          <p>We want to be crystal clear:</p>
+          <ul>
+            <li>We do not sell your data</li>
+            <li>We do not share your data with third parties</li>
+            <li>We do not have servers that receive your data</li>
+            <li>No external analytics or advertising services are integrated</li>
+          </ul>
+          <p>
+            Since all processing happens locally in your browser, there is no data transmission to any external entity.
+          </p>
+        </div>
 
-      <div class="privacy-section">
-        <h2>Open Source and Transparency</h2>
-        <p>
-          We believe in transparency. The extension's code can be inspected through your browser's extension management interface,
-          allowing technically inclined users to verify our privacy claims.
-        </p>
-      </div>
+        <div class="privacy-section">
+          <h2>Permissions Explained</h2>
+          <p>SSE Inspector requires certain browser permissions to function. Here's why:</p>
 
-      <div class="contact-section">
-        <h2>Contact Us</h2>
-        <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our privacy practices, please don't hesitate to contact us:</p>
-        <p><strong>Email:</strong> <a href="mailto:jescain2024@gmail.com">jescain2024@gmail.com</a></p>
-        <p>We take your privacy seriously and will respond to your inquiries as promptly as possible.</p>
+          <div class="permission-card">
+            <h4>DevTools Permission</h4>
+            <p>Allows the extension to create a panel in your browser's developer tools where SSE streams are displayed. This permission is essential for the core functionality but does not grant access to your browsing data.</p>
+          </div>
+
+          <div class="permission-card">
+            <h4>WebRequest Permission</h4>
+            <p>Enables monitoring of network requests to identify SSE connections. This permission operates under the principle of minimum privilege—it only observes requests, does not modify them, and does not transmit data externally.</p>
+          </div>
+
+          <div class="permission-card">
+            <h4>ActiveTab Permission</h4>
+            <p>Allows interaction with the currently active tab only when you explicitly open the DevTools panel. This ensures the extension cannot access tabs you're not actively working with.</p>
+          </div>
+        </div>
+
+        <div class="privacy-section">
+          <h2>Data Security</h2>
+          <p>
+            All data processed by SSE Inspector remains within the secure, sandboxed environment of your browser.
+            We follow browser extension security best practices to ensure:
+          </p>
+          <ul>
+            <li>No unauthorized access to your data</li>
+            <li>Isolation from other extensions and web pages</li>
+            <li>Compliance with browser security policies</li>
+          </ul>
+        </div>
+
+        <div class="privacy-section">
+          <h2>Your Rights and Control</h2>
+          <p>You have complete control over the extension:</p>
+          <ul>
+            <li><strong>Disable or Remove:</strong> You can disable or uninstall the extension at any time through your browser settings</li>
+            <li><strong>Clear Data:</strong> You can clear any locally stored preferences by removing the extension</li>
+            <li><strong>Transparency:</strong> The extension's source code behavior is transparent through the browser's extension inspection tools</li>
+          </ul>
+        </div>
+
+        <div class="privacy-section">
+          <h2>Children's Privacy</h2>
+          <p>
+            SSE Inspector is a developer tool and is not directed at children under 13 years of age.
+            We do not knowingly collect information from children. Since we don't collect any personal information at all,
+            this risk is inherently minimized.
+          </p>
+        </div>
+
+        <div class="privacy-section">
+          <h2>Changes to This Privacy Policy</h2>
+          <p>
+            We may update this Privacy Policy from time to time to reflect changes in the extension or legal requirements.
+            When we do, we will update the "Last Updated" date at the top of this page. We encourage you to review this policy periodically.
+          </p>
+          <p>
+            Continued use of the extension after changes constitutes acceptance of the updated policy.
+          </p>
+        </div>
+
+        <div class="privacy-section">
+          <h2>Open Source and Transparency</h2>
+          <p>
+            We believe in transparency. The extension's code can be inspected through your browser's extension management interface,
+            allowing technically inclined users to verify our privacy claims.
+          </p>
+        </div>
+
+        <div class="contact-section">
+          <h2>Contact Us</h2>
+          <p>If you have any questions, concerns, or requests regarding this Privacy Policy or our privacy practices, please don't hesitate to contact us:</p>
+          <p><strong>Email:</strong> <a href="mailto:jescain2024@gmail.com">jescain2024@gmail.com</a></p>
+          <p>We take your privacy seriously and will respond to your inquiries as promptly as possible.</p>
+        </div>
       </div>
     </div>
   </main>
 
   <footer>
-    <p>© 2026 SSE Inspector. All rights reserved.</p>
+    <p>© 2026 SSE Inspector. All rights reserved. | <a href="#" onclick="showPage('privacy')">Privacy Policy</a></p>
   </footer>
+
+  <script>
+    function showPage(pageId) {
+      // Hide all pages
+      document.querySelectorAll('.page').forEach(page => {
+        page.classList.remove('active');
+      });
+
+      // Show selected page
+      document.getElementById(pageId).classList.add('active');
+
+      // Update nav links
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        if (link.dataset.page === pageId) {
+          link.classList.add('active');
+        }
+      });
+
+      // Scroll to top
+      window.scrollTo(0, 0);
+
+      // Update URL hash
+      history.pushState(null, '', pageId === 'landing' ? '#' : '#privacy');
+    }
+
+    // Handle browser back/forward
+    window.addEventListener('hashchange', () => {
+      const page = location.hash === '#privacy' ? 'privacy' : 'landing';
+      showPage(page);
+    });
+
+    // Handle initial hash
+    if (location.hash === '#privacy') {
+      showPage('privacy');
+    }
+  </script>
 </body>
 </html>
