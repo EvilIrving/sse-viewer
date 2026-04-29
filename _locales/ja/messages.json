@@ -140,5 +140,35 @@
   "langFr": {
     "message": "Français",
     "description": "French"
+  },
+  "copyButton": {
+    "message": "コピー",
+    "description": "Copy button"
+  },
+  "copiedToast": {
+    "message": "クリップボードにコピーしました",
+    "description": "Copied toast message"
+  },
+  "autoScrollOn": {
+    "message": "自動スクロール: オン",
+    "description": "Auto-scroll on label"
+  },
+  "autoScrollOff": {
+    "message": "自動スクロール: オフ",
+    "description": "Auto-scroll off label"
+  },
+  "deleteRequest": {
+    "message": "リクエストを削除",
+    "description": "Delete request tooltip"
+  },
+  "eventsTrimmed": {
+    "message": "古いイベントを自動削除しました（$COUNT$件の上限を超過）",
+    "description": "Events trimmed notification",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5000"
+      }
+    }
   }
 }

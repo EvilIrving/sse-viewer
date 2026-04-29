@@ -140,5 +140,35 @@
   "langFr": {
     "message": "Français",
     "description": "French"
+  },
+  "copyButton": {
+    "message": "Copier",
+    "description": "Copy button"
+  },
+  "copiedToast": {
+    "message": "Copié dans le presse-papiers",
+    "description": "Copied toast message"
+  },
+  "autoScrollOn": {
+    "message": "Défilement auto: ON",
+    "description": "Auto-scroll on label"
+  },
+  "autoScrollOff": {
+    "message": "Défilement auto: OFF",
+    "description": "Auto-scroll off label"
+  },
+  "deleteRequest": {
+    "message": "Supprimer la requête",
+    "description": "Delete request tooltip"
+  },
+  "eventsTrimmed": {
+    "message": "Anciens événements supprimés (limite de $COUNT$ dépassée)",
+    "description": "Events trimmed notification",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5000"
+      }
+    }
   }
 }

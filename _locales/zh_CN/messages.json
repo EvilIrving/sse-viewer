@@ -140,5 +140,35 @@
   "langFr": {
     "message": "Français",
     "description": "French"
+  },
+  "copyButton": {
+    "message": "复制",
+    "description": "Copy button"
+  },
+  "copiedToast": {
+    "message": "已复制到剪贴板",
+    "description": "Copied toast message"
+  },
+  "autoScrollOn": {
+    "message": "自动滚动: 开",
+    "description": "Auto-scroll on label"
+  },
+  "autoScrollOff": {
+    "message": "自动滚动: 关",
+    "description": "Auto-scroll off label"
+  },
+  "deleteRequest": {
+    "message": "删除此请求",
+    "description": "Delete request tooltip"
+  },
+  "eventsTrimmed": {
+    "message": "已自动清理旧事件（超出 $COUNT$ 条上限）",
+    "description": "Events trimmed notification",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "5000"
+      }
+    }
   }
 }

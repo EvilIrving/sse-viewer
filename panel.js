@@ -110,12 +110,18 @@ const tabData = document.getElementById('tabData');
 const tabHeaders = document.getElementById('tabHeaders');
 const tabRaw = document.getElementById('tabRaw');
 const langSelector = document.getElementById('langSelector');
+const autoScrollBtn = document.getElementById('autoScroll');
+const copyBtn = document.getElementById('copyBtn');
+const toast = document.getElementById('toast');
+
+const MAX_EVENTS = 5000;
 
 const state = {
   events: [], // {time, type, url, payload: {data,event,id,json, ...}}
   filterText: '',
   expandedRequests: new Set(), // 展开的请求组
   selectedRequest: null, // {requestKey, messageIndex} 或 {requestKey} 只选择请求头
+  autoScroll: true,
 };
 
 let port;
@@ -132,14 +138,16 @@ const RECONNECT_INTERVAL = 3000; // 3秒
   await i18n.loadMessages(currentLang);
   i18n.init();
   langSelector.value = currentLang;
+  updateAutoScrollBtn();
 })();
 
 // Language selector change handler (Beta feature)
 langSelector.addEventListener('change', async (e) => {
   const selectedLang = e.target.value;
   await i18n.setLanguage(selectedLang);
-  
+
   // Re-render the UI to apply new language
+  updateAutoScrollBtn();
   render();
   if (state.selectedRequest) {
     renderDrawer();
@@ -177,7 +185,14 @@ function connect() {
     port.onMessage.addListener((msg) => {
       if (!msg || !msg.__sse_viewer) return;
       state.events.push(msg);
+      // 内存上限：超出时自动清理最旧的事件
+      if (state.events.length > MAX_EVENTS) {
+        const removed = state.events.length - MAX_EVENTS;
+        state.events.splice(0, removed);
+        showToast(i18n.getMessage('eventsTrimmed', String(removed)));
+      }
       render();
+      if (state.autoScroll) scrollToLatest();
     });
     
     port.onDisconnect.addListener(() => {
@@ -274,6 +289,80 @@ clearBtn.addEventListener('click', () => {
   closeDrawer();
   render();
 });
+
+// 自动滚动开关
+autoScrollBtn.addEventListener('click', () => {
+  state.autoScroll = !state.autoScroll;
+  updateAutoScrollBtn();
+  if (state.autoScroll) scrollToLatest();
+});
+
+function updateAutoScrollBtn() {
+  if (state.autoScroll) {
+    autoScrollBtn.className = 'btn on';
+    autoScrollBtn.textContent = i18n.getMessage('autoScrollOn');
+  } else {
+    autoScrollBtn.className = 'btn off';
+    autoScrollBtn.textContent = i18n.getMessage('autoScrollOff');
+  }
+}
+
+function scrollToLatest() {
+  requestAnimationFrame(() => {
+    listContainer.scrollTop = listContainer.scrollHeight;
+  });
+}
+
+// 复制按钮
+copyBtn.addEventListener('click', () => {
+  if (!state.selectedRequest) return;
+  const { requestKey, messageIndex } = state.selectedRequest;
+  const groups = groupEventsByRequest(state.events);
+  const group = groups.find(g => g.key === requestKey);
+  if (!group) return;
+
+  let text;
+  if (messageIndex === null) {
+    text = JSON.stringify(group, null, 2);
+  } else {
+    const msg = group.messages[messageIndex];
+    text = msg ? JSON.stringify(msg, null, 2) : '';
+  }
+  if (text) copyToClipboard(text);
+});
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    copyBtn.classList.add('copied');
+    copyBtn.textContent = i18n.getMessage('copiedToast');
+    setTimeout(() => {
+      copyBtn.classList.remove('copied');
+      copyBtn.textContent = i18n.getMessage('copyButton');
+    }, 1500);
+  }).catch(() => {
+    // fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    copyBtn.classList.add('copied');
+    copyBtn.textContent = i18n.getMessage('copiedToast');
+    setTimeout(() => {
+      copyBtn.classList.remove('copied');
+      copyBtn.textContent = i18n.getMessage('copyButton');
+    }, 1500);
+  });
+}
+
+function showToast(msg, duration = 2000) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), duration);
+}
 
 // 关闭抽屉
 closeDrawerBtn.addEventListener('click', () => {
@@ -405,6 +494,15 @@ function switchTab(tabName) {
   renderDrawer();
 }
 
+function clearRequest(requestKey) {
+  state.events = state.events.filter(e => getRequestKey(e) !== requestKey);
+  state.expandedRequests.delete(requestKey);
+  if (state.selectedRequest?.requestKey === requestKey) {
+    closeDrawer();
+  }
+  render();
+}
+
 function render() {
   const ft = state.filterText;
   
@@ -522,10 +620,20 @@ function render() {
     
     headerRight.appendChild(messageCount);
     headerRight.appendChild(timeSpan);
-    
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-request-btn';
+    deleteBtn.textContent = '×';
+    deleteBtn.title = i18n.getMessage('deleteRequest');
+    deleteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearRequest(group.key);
+    });
+    headerRight.appendChild(deleteBtn);
+
     header.appendChild(headerLeft);
     header.appendChild(headerRight);
-    
+
     // 点击展开图标 - 切换展开/收起
     expandIcon.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -602,6 +710,120 @@ function render() {
     
     list.appendChild(groupDiv);
   }
+}
+
+// JSON 可折叠树形视图
+function renderJsonTree(container, data) {
+  container.innerHTML = '';
+  container.className = 'json-tree';
+  if (data === undefined || data === null) {
+    const el = document.createElement('span');
+    el.className = 'json-null';
+    el.textContent = String(data);
+    container.appendChild(el);
+    return;
+  }
+  container.appendChild(createJsonNode('root', data, 0));
+}
+
+function createJsonNode(key, value, depth) {
+  const row = document.createElement('div');
+  row.className = 'json-row';
+
+  if (value !== null && typeof value === 'object') {
+    const isArray = Array.isArray(value);
+    const entries = isArray
+      ? value.map((v, i) => [String(i), v])
+      : Object.entries(value);
+    const isEmpty = entries.length === 0;
+
+    const toggle = document.createElement('span');
+    toggle.className = 'json-toggle';
+    toggle.style.display = 'inline-block';
+    toggle.style.width = '14px';
+    toggle.style.textAlign = 'center';
+    if (isEmpty) {
+      toggle.textContent = ' ';
+      toggle.style.cursor = 'default';
+    } else {
+      toggle.textContent = '▶';
+      toggle.style.cursor = 'pointer';
+    }
+
+    const keySpan = document.createElement('span');
+    keySpan.className = 'json-key';
+    if (key !== 'root') keySpan.textContent = `"${key}": `;
+
+    const openBracket = document.createElement('span');
+    openBracket.className = 'json-bracket';
+
+    const rowContent = document.createElement('span');
+    if (isEmpty) {
+      openBracket.textContent = isArray ? '[]' : '{}';
+    } else {
+      openBracket.textContent = isArray ? '[' : '{';
+      const countSpan = document.createElement('span');
+      countSpan.style.color = '#999';
+      countSpan.style.fontSize = '10px';
+      countSpan.textContent = ` ${entries.length} item${entries.length > 1 ? 's' : ''}`;
+      rowContent.appendChild(countSpan);
+    }
+
+    row.appendChild(toggle);
+    if (key !== 'root') row.appendChild(keySpan);
+    row.appendChild(openBracket);
+    row.appendChild(rowContent);
+
+    if (!isEmpty) {
+      const childContainer = document.createElement('div');
+      childContainer.style.display = 'none';
+      childContainer.style.paddingLeft = '16px';
+
+      entries.forEach(([k, v]) => {
+        childContainer.appendChild(createJsonNode(k, v, depth + 1));
+      });
+
+      const closeRow = document.createElement('div');
+      closeRow.className = 'json-row';
+      const closeBracket = document.createElement('span');
+      closeBracket.className = 'json-bracket';
+      closeBracket.textContent = isArray ? ']' : '}';
+      closeRow.appendChild(closeBracket);
+      childContainer.appendChild(closeRow);
+
+      row.appendChild(childContainer);
+
+      toggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isVisible = childContainer.style.display !== 'none';
+        childContainer.style.display = isVisible ? 'none' : 'block';
+        toggle.textContent = isVisible ? '▶' : '▼';
+      });
+    }
+  } else {
+    const keySpan = document.createElement('span');
+    keySpan.className = 'json-key';
+    if (key !== 'root') keySpan.textContent = `"${key}": `;
+    row.appendChild(keySpan);
+
+    const valueSpan = document.createElement('span');
+    if (value === null) {
+      valueSpan.className = 'json-null';
+      valueSpan.textContent = 'null';
+    } else if (typeof value === 'boolean') {
+      valueSpan.className = 'json-bool';
+      valueSpan.textContent = String(value);
+    } else if (typeof value === 'number') {
+      valueSpan.className = 'json-number';
+      valueSpan.textContent = String(value);
+    } else {
+      valueSpan.className = 'json-string';
+      valueSpan.textContent = `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+    }
+    row.appendChild(valueSpan);
+  }
+
+  return row;
 }
 
 function renderDrawer() {
@@ -719,20 +941,24 @@ function renderMessage(event, group) {
   // Data Tab
   tabData.innerHTML = '';
   if (event.payload?.json) {
-    const jsonDiv = document.createElement('div');
-    jsonDiv.className = 'json-view';
-    jsonDiv.textContent = JSON.stringify(event.payload.json, null, 2);
-    tabData.appendChild(jsonDiv);
+    renderJsonTree(tabData, event.payload.json);
   } else {
     const data = event.payload?.data ?? event.payload;
-    const jsonDiv = document.createElement('div');
-    jsonDiv.className = 'json-view';
+    // Try to parse as JSON for tree view
+    let parsed = null;
     if (typeof data === 'string') {
-      jsonDiv.textContent = data;
+      try { parsed = JSON.parse(data); } catch {}
     } else {
-      jsonDiv.textContent = JSON.stringify(data, null, 2);
+      parsed = data;
     }
-    tabData.appendChild(jsonDiv);
+    if (parsed && typeof parsed === 'object') {
+      renderJsonTree(tabData, parsed);
+    } else {
+      const jsonDiv = document.createElement('div');
+      jsonDiv.className = 'json-view';
+      jsonDiv.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+      tabData.appendChild(jsonDiv);
+    }
   }
   
   // Headers Tab
