@@ -1,10 +1,10 @@
 {
   "extName": {
-    "message": "SSE Viewer BETA",
+    "message": "SSE Inspector",
     "description": "Extension name"
   },
   "extDescription": {
-    "message": "此扩展程序目前处于 Beta 版测试阶段 - 在开发者工具中捕获和可视化服务器发送事件（SSE）",
+    "message": "在开发者工具中捕获和可视化服务器发送事件（SSE）",
     "description": "Extension description"
   },
   "filterPlaceholder": {

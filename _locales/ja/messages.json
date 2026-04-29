@@ -1,10 +1,10 @@
 {
   "extName": {
-    "message": "SSE Viewer BETA",
+    "message": "SSE Inspector",
     "description": "Extension name"
   },
   "extDescription": {
-    "message": "この拡張機能は現在ベータテスト中です - DevToolsでサーバー送信イベント（SSE）をキャプチャして視覚化します",
+    "message": "DevToolsでサーバー送信イベント（SSE）をキャプチャして視覚化します",
     "description": "Extension description"
   },
   "filterPlaceholder": {

@@ -14,7 +14,7 @@ manifest.json 要求：
 
 ```json
 "name": "**MSG_extName**",
-"version": "0.0.1", // google 推荐一开始使用 0.0.1， 
+"version": "1.0.0",
 "manifest_version": 3,
 "description": "**MSG_extDescription**",
 "icons": {

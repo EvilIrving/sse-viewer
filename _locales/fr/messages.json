@@ -1,10 +1,10 @@
 {
   "extName": {
-    "message": "SSE Viewer BETA",
+    "message": "SSE Inspector",
     "description": "Extension name"
   },
   "extDescription": {
-    "message": "Cette extension est actuellement en phase de test bêta - Capturez et visualisez les événements envoyés par le serveur (SSE) dans DevTools",
+    "message": "Capturez et visualisez les événements envoyés par le serveur (SSE) dans DevTools",
     "description": "Extension description"
   },
   "filterPlaceholder": {
