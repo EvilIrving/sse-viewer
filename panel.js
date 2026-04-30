@@ -111,6 +111,7 @@ const tabHeaders = document.getElementById('tabHeaders');
 const tabRaw = document.getElementById('tabRaw');
 const langSelector = document.getElementById('langSelector');
 const autoScrollBtn = document.getElementById('autoScroll');
+const expandAllBtn = document.getElementById('expandAllBtn');
 const copyBtn = document.getElementById('copyBtn');
 const toast = document.getElementById('toast');
 
@@ -122,6 +123,7 @@ const state = {
   expandedRequests: new Set(), // 展开的请求组
   selectedRequest: null, // {requestKey, messageIndex} 或 {requestKey} 只选择请求头
   autoScroll: true,
+  treeExpanded: false,
 };
 
 let port;
@@ -162,7 +164,7 @@ function connect() {
   
   // 检查扩展上下文是否有效
   if (!chrome.runtime || !chrome.runtime.id) {
-    console.error('[SSE Inspector Panel] Extension context is invalid, stopping reconnect attempts');
+    console.log('[SSE Inspector Panel] Extension context invalid, stopping');
     contextInvalidated = true;
     isConnected = false;
     list.innerHTML = `<div style="padding: 20px; color: #ff6b6b;">${i18n.getMessage('contextInvalidatedError')}</div>`;
@@ -201,9 +203,9 @@ function connect() {
       // 检查是否是扩展上下文失效导致的断开
       const lastError = chrome.runtime.lastError;
       if (lastError) {
-        console.warn('[SSE Inspector Panel] Port disconnected:', lastError.message);
+        console.log('[SSE Inspector Panel] Port disconnected:', lastError.message);
       } else {
-        console.warn('[SSE Inspector Panel] Port disconnected, will attempt reconnect');
+        console.log('[SSE Inspector Panel] Port disconnected, reconnecting...');
       }
       
       // 显示重连提示，但不影响已有数据
@@ -256,7 +258,7 @@ function connect() {
     // 如果是扩展上下文失效，不再尝试重连
     if (e.message && (e.message.includes('Extension context invalidated') || 
                       e.message.includes('Cannot access a chrome API'))) {
-      console.error('[SSE Inspector Panel] Extension context invalidated, stopping reconnect attempts');
+      console.log('[SSE Inspector Panel] Extension context invalidated');
       contextInvalidated = true;
       list.innerHTML = `<div style="padding: 20px; color: #ff6b6b;">${i18n.getMessage('contextInvalidatedError')}</div>`;
       const notice = document.getElementById('reconnect-notice');
@@ -331,6 +333,27 @@ copyBtn.addEventListener('click', () => {
   if (text) copyToClipboard(text);
 });
 
+// 全部展开/收起按钮
+expandAllBtn.addEventListener('click', () => {
+  const toggles = tabData.querySelectorAll('.json-toggle');
+  if (toggles.length === 0) return;
+
+  // 判断是否有折叠的节点
+  const activeToggles = Array.from(toggles).filter(t => t.style.cursor !== 'default');
+  const allExpanded = activeToggles.every(t => t.textContent === '▼');
+  if (allExpanded) {
+    activeToggles.forEach(t => {
+      if (t.dataset.depth === '0') t.click();
+    });
+    state.treeExpanded = false;
+    expandAllBtn.textContent = i18n.getMessage('expandAll');
+  } else {
+    expandAllToggles(toggles);
+    state.treeExpanded = true;
+    expandAllBtn.textContent = i18n.getMessage('collapseAll');
+  }
+});
+
 function copyToClipboard(text) {
   navigator.clipboard.writeText(text).then(() => {
     copyBtn.classList.add('copied');
@@ -356,6 +379,24 @@ function copyToClipboard(text) {
       copyBtn.textContent = i18n.getMessage('copyButton');
     }, 1500);
   });
+}
+
+function expandAllToggles(toggles) {
+  // 递归展开所有节点
+  const expand = (list) => {
+    for (const t of list) {
+      if (t.textContent === '▶' && t.style.cursor !== 'default') {
+        t.click();
+        // 收集子节点中的 toggle 递归展开
+        const parent = t.parentElement;
+        if (parent) {
+          const childToggles = parent.querySelectorAll('.json-toggle');
+          expand(childToggles);
+        }
+      }
+    }
+  };
+  expand(toggles);
 }
 
 function showToast(msg, duration = 2000) {
@@ -448,10 +489,12 @@ function groupEventsByRequest(events) {
       url.includes('conversations') && url.includes('openai') ||
       url.includes('/v1/chat') ||
       url.includes('anthropic') || url.includes('huggingface') || url.includes('together') ||
-      url.includes('bedrock') || url.includes('azure')
+      url.includes('bedrock') || url.includes('azure') ||
+      url.includes('quark') || url.includes('tongyi') || url.includes('qianwen') ||
+      url.includes('aliyun') && (url.includes('chat') || url.includes('stream'))
     );
   };
-  
+
   const sortedGroups = Array.from(groups.values()).sort((a, b) => {
     // 优先按 AI 请求排列
     const aIsAI = isAIChatRequest(a.url);
@@ -519,10 +562,12 @@ function render() {
       url.includes('/v1/chat') ||
       // 其他 AI 服务
       url.includes('anthropic') || url.includes('huggingface') || url.includes('together') ||
-      url.includes('bedrock') || url.includes('azure')
+      url.includes('bedrock') || url.includes('azure') ||
+      url.includes('quark') || url.includes('tongyi') || url.includes('qianwen') ||
+      url.includes('aliyun') && (url.includes('chat') || url.includes('stream'))
     );
   };
-  
+
   const isNonStreamRequest = (url) => {
     return !isAIChatRequest(url) && (
       url.toLowerCase().includes('mixpanel') ||
@@ -715,15 +760,18 @@ function render() {
 // JSON 可折叠树形视图
 function renderJsonTree(container, data) {
   container.innerHTML = '';
-  container.className = 'json-tree';
+  const wrapper = document.createElement('div');
+  wrapper.className = 'json-tree';
   if (data === undefined || data === null) {
     const el = document.createElement('span');
     el.className = 'json-null';
     el.textContent = String(data);
-    container.appendChild(el);
+    wrapper.appendChild(el);
+    container.appendChild(wrapper);
     return;
   }
-  container.appendChild(createJsonNode('root', data, 0));
+  wrapper.appendChild(createJsonNode('root', data, 0));
+  container.appendChild(wrapper);
 }
 
 function createJsonNode(key, value, depth) {
@@ -739,6 +787,7 @@ function createJsonNode(key, value, depth) {
 
     const toggle = document.createElement('span');
     toggle.className = 'json-toggle';
+    toggle.dataset.depth = depth;
     toggle.style.display = 'inline-block';
     toggle.style.width = '14px';
     toggle.style.textAlign = 'center';
@@ -769,10 +818,14 @@ function createJsonNode(key, value, depth) {
       rowContent.appendChild(countSpan);
     }
 
+    // 复制图标
+    const copyIcon = createCopyIcon(value);
+
     row.appendChild(toggle);
     if (key !== 'root') row.appendChild(keySpan);
     row.appendChild(openBracket);
     row.appendChild(rowContent);
+    row.appendChild(copyIcon);
 
     if (!isEmpty) {
       const childContainer = document.createElement('div');
@@ -800,6 +853,96 @@ function createJsonNode(key, value, depth) {
         toggle.textContent = isVisible ? '▶' : '▼';
       });
     }
+  } else if (typeof value === 'string') {
+    // 检测嵌套 JSON 字符串
+    const trimmed = value.trim();
+    let nestedJson = null;
+    if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && trimmed.length > 2) {
+      try { nestedJson = JSON.parse(trimmed); } catch {}
+    }
+
+    if (nestedJson && typeof nestedJson === 'object') {
+      // 渲染为可折叠的嵌套 JSON 节点
+      const isArray = Array.isArray(nestedJson);
+      const entries = isArray
+        ? nestedJson.map((v, i) => [String(i), v])
+        : Object.entries(nestedJson);
+      const isEmpty = entries.length === 0;
+
+      const toggle = document.createElement('span');
+      toggle.className = 'json-toggle';
+      toggle.style.display = 'inline-block';
+      toggle.style.width = '14px';
+      toggle.style.textAlign = 'center';
+      if (isEmpty) {
+        toggle.textContent = ' ';
+        toggle.style.cursor = 'default';
+      } else {
+        toggle.textContent = '▶';
+        toggle.style.cursor = 'pointer';
+      }
+
+      const keySpan = document.createElement('span');
+      keySpan.className = 'json-key';
+      if (key !== 'root') keySpan.textContent = `"${key}": `;
+      row.appendChild(keySpan);
+      row.appendChild(toggle);
+
+      const openBracket = document.createElement('span');
+      openBracket.className = 'json-bracket';
+      if (isEmpty) {
+        openBracket.textContent = isArray ? '[]' : '{}';
+        row.appendChild(openBracket);
+      } else {
+        openBracket.textContent = isArray ? '[' : '{';
+        row.appendChild(openBracket);
+        const countSpan = document.createElement('span');
+        countSpan.style.color = '#999';
+        countSpan.style.fontSize = '10px';
+        countSpan.textContent = ` ${entries.length} item${entries.length > 1 ? 's' : ''}`;
+        row.appendChild(countSpan);
+
+        const copyIcon = createCopyIcon(nestedJson);
+        row.appendChild(copyIcon);
+
+        const childContainer = document.createElement('div');
+        childContainer.style.display = 'none';
+        childContainer.style.paddingLeft = '16px';
+        entries.forEach(([k, v]) => {
+          childContainer.appendChild(createJsonNode(k, v, depth + 1));
+        });
+
+        const closeRow = document.createElement('div');
+        closeRow.className = 'json-row';
+        const closeBracket = document.createElement('span');
+        closeBracket.className = 'json-bracket';
+        closeBracket.textContent = isArray ? ']' : '}';
+        closeRow.appendChild(closeBracket);
+        childContainer.appendChild(closeRow);
+
+        row.appendChild(childContainer);
+
+        toggle.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const isVisible = childContainer.style.display !== 'none';
+          childContainer.style.display = isVisible ? 'none' : 'block';
+          toggle.textContent = isVisible ? '▶' : '▼';
+        });
+      }
+    } else {
+      const keySpan = document.createElement('span');
+      keySpan.className = 'json-key';
+      if (key !== 'root') keySpan.textContent = `"${key}": `;
+      row.appendChild(keySpan);
+
+      const valueSpan = document.createElement('span');
+      valueSpan.className = 'json-string';
+      valueSpan.textContent = `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+      row.appendChild(valueSpan);
+
+      const copyIcon = createCopyIcon(value);
+      row.appendChild(copyIcon);
+    }
   } else {
     const keySpan = document.createElement('span');
     keySpan.className = 'json-key';
@@ -816,14 +959,41 @@ function createJsonNode(key, value, depth) {
     } else if (typeof value === 'number') {
       valueSpan.className = 'json-number';
       valueSpan.textContent = String(value);
-    } else {
-      valueSpan.className = 'json-string';
-      valueSpan.textContent = `"${String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
     }
     row.appendChild(valueSpan);
+
+    const copyIcon = createCopyIcon(value);
+    row.appendChild(copyIcon);
   }
 
   return row;
+}
+
+function createCopyIcon(value) {
+  const icon = document.createElement('span');
+  icon.className = 'json-row-copy';
+  icon.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`;
+  icon.title = i18n.getMessage('copyItem');
+  icon.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const text = JSON.stringify(value, null, 2);
+    navigator.clipboard.writeText(text).then(() => {
+      icon.classList.add('copied');
+      setTimeout(() => icon.classList.remove('copied'), 1000);
+    }).catch(() => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      icon.classList.add('copied');
+      setTimeout(() => icon.classList.remove('copied'), 1000);
+    });
+  });
+  return icon;
 }
 
 function renderDrawer() {
@@ -859,8 +1029,8 @@ function renderDrawer() {
 function renderRequestSummary(group) {
   // Data Tab - 显示所有消息的汇总
   tabData.innerHTML = '';
-  const summaryDiv = document.createElement('div');
-  summaryDiv.innerHTML = `
+  expandAllBtn.textContent = state.treeExpanded ? i18n.getMessage('collapseAll') : i18n.getMessage('expandAll');
+  const summaryDiv = document.createElement('div');  summaryDiv.innerHTML = `
     <h3 style="margin-top: 0; font-size: 14px; color: #666;">${i18n.getMessage('requestOverview')}</h3>
     <div style="margin-bottom: 16px;">
       <div style="font-size: 12px; color: #999; margin-bottom: 8px;">${i18n.getMessage('messagesCount', group.messages.length)}</div>
@@ -940,19 +1110,29 @@ function renderRequestSummary(group) {
 function renderMessage(event, group) {
   // Data Tab
   tabData.innerHTML = '';
-  if (event.payload?.json) {
-    renderJsonTree(tabData, event.payload.json);
+  expandAllBtn.textContent = state.treeExpanded ? i18n.getMessage('collapseAll') : i18n.getMessage('expandAll');
+  const jsonVal = event.payload?.json;  if (jsonVal && typeof jsonVal === 'object') {
+    renderJsonTree(tabData, jsonVal);
+    if (state.treeExpanded) expandAllToggles(tabData.querySelectorAll('.json-toggle'));
   } else {
-    const data = event.payload?.data ?? event.payload;
-    // Try to parse as JSON for tree view
+    let data = event.payload?.data ?? event.payload;
     let parsed = null;
+    // payload.json 可能是字符串（双重 JSON 编码），尝试用它
+    if (jsonVal && typeof jsonVal === 'string') {
+      data = jsonVal;
+    }
     if (typeof data === 'string') {
       try { parsed = JSON.parse(data); } catch {}
+      // 双重解码：解析结果仍是字符串则再试一次
+      if (typeof parsed === 'string') {
+        try { parsed = JSON.parse(parsed); } catch {}
+      }
     } else {
       parsed = data;
     }
     if (parsed && typeof parsed === 'object') {
       renderJsonTree(tabData, parsed);
+      if (state.treeExpanded) expandAllToggles(tabData.querySelectorAll('.json-toggle'));
     } else {
       const jsonDiv = document.createElement('div');
       jsonDiv.className = 'json-view';

@@ -2,7 +2,6 @@
 (function () {
   // 防止重复注入
   if (window.__sse_viewer_inject_installed) {
-    console.warn('[SSE Inspector] Inject already installed, skipping');
     return;
   }
   window.__sse_viewer_inject_installed = true;
@@ -21,7 +20,10 @@
       url.includes('/v1/chat') ||
       // 其他 AI 服务
       url.includes('anthropic') || url.includes('huggingface') || url.includes('together') ||
-      url.includes('bedrock') || url.includes('azure')
+      url.includes('bedrock') || url.includes('azure') ||
+      // 夸克 / 通义千问
+      url.includes('quark') || url.includes('tongyi') || url.includes('qianwen') ||
+      url.includes('aliyun') && (url.includes('chat') || url.includes('stream'))
     );
     
     const shouldIgnore = url && !isAIChatRequest && (
@@ -268,13 +270,50 @@
           if (newData) {
             debug('XHR chunk received', { url, length: newData.length });
             
-            const lines = newData.split(/\r?\n/).filter(l => l.trim());
+            let lines = newData.split(/\r?\n/).filter(l => l.trim());
+            // 尝试按 SSE 帧边界拆分（双换行），处理完整帧
+            // XHR responseText 可能包含多个 SSE 事件
+            let buf = '';
             for (const line of lines) {
+              if (line.startsWith('data:')) {
+                // SSE 格式：累积 data 行
+                const dataContent = line.slice(5);
+                buf += (dataContent.startsWith(' ') ? dataContent.slice(1) : dataContent);
+              } else if (line.startsWith('event:') || line.startsWith('id:') || line.startsWith('retry:')) {
+                // SSE 元数据行，忽略或暂存
+                continue;
+              } else if (line === '' && buf) {
+                // 空行表示帧结束
+                let json = null;
+                try { json = JSON.parse(buf); } catch {}
+                if (json) {
+                  post('message', url, {
+                    data: buf,
+                    event: json.type || json.event || 'message',
+                    json
+                  });
+                }
+                buf = '';
+              } else {
+                // 纯 JSON 行（无 data: 前缀）
+                let json = null;
+                try { json = JSON.parse(line); } catch {}
+                if (json) {
+                  post('message', url, {
+                    data: line,
+                    event: json.type || json.event || 'message',
+                    json
+                  });
+                }
+              }
+            }
+            // 未闭合的帧（没有结尾空行），也尝试解析
+            if (buf) {
               let json = null;
-              try { json = JSON.parse(line); } catch {}
+              try { json = JSON.parse(buf); } catch {}
               if (json) {
                 post('message', url, {
-                  data: line,
+                  data: buf,
                   event: json.type || json.event || 'message',
                   json
                 });

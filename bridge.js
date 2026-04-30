@@ -2,7 +2,6 @@
 (function() {
   // 防止重复注入
   if (window.__sse_viewer_bridge_installed) {
-    console.warn('[SSE Inspector] Bridge already installed, skipping');
     return;
   }
   window.__sse_viewer_bridge_installed = true;
@@ -22,7 +21,7 @@
     
     // 检查扩展上下文是否有效
     if (!chrome.runtime || !chrome.runtime.id) {
-      console.error('[SSE Inspector] Extension context is invalid, stopping reconnect attempts');
+      console.log('[SSE Inspector] Bridge: extension context invalid, stopping');
       contextInvalidated = true;
       isConnected = false;
       port = null;
@@ -42,9 +41,9 @@
         // 检查是否是扩展上下文失效导致的断开
         const lastError = chrome.runtime.lastError;
         if (lastError) {
-          console.warn('[SSE Inspector] Bridge port disconnected:', lastError.message);
+          console.log('[SSE Inspector] Bridge port disconnected:', lastError.message);
         } else {
-          console.warn('[SSE Inspector] Bridge port disconnected, will attempt reconnect');
+          console.log('[SSE Inspector] Bridge port disconnected, reconnecting...');
         }
         
         // 5秒后尝试重连
@@ -78,7 +77,7 @@
       // 如果是扩展上下文失效，不再尝试重连
       if (err.message && (err.message.includes('Extension context invalidated') || 
                           err.message.includes('Cannot access a chrome API'))) {
-        console.error('[SSE Inspector] Extension context invalidated, stopping reconnect attempts');
+        console.log('[SSE Inspector] Bridge: extension context invalidated');
         contextInvalidated = true;
         // 清空消息队列防止稍后接收错误的重连
         messageQueue = [];

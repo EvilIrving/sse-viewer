@@ -188,6 +188,27 @@
       .json-null { color: #808080; font-style: italic; }
       .json-bracket { color: #666; }
 
+      /* JSON row copy icon */
+      .json-row-copy {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        margin-left: 4px;
+        cursor: pointer;
+        opacity: 0;
+        color: #999;
+        vertical-align: middle;
+        transition: opacity 0.15s, color 0.15s, background 0.15s;
+        user-select: none;
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+      .json-row:hover .json-row-copy { opacity: 1; }
+      .json-row-copy:hover { color: #1976d2; background: rgba(33,150,243,0.1); }
+      .json-row-copy.copied { color: #4caf50; opacity: 1; }
+
       /* Copy button */
       .copy-btn {
         padding: 4px 10px;
@@ -260,6 +281,7 @@
         <div id="drawerHeader">
           <div id="drawerTitle" data-i18n="detailsTitle">详细信息</div>
           <div style="display:flex;gap:8px;align-items:center;">
+            <button id="expandAllBtn" class="copy-btn" data-i18n="expandAll">全部展开</button>
             <button id="copyBtn" class="copy-btn" data-i18n="copyButton">复制</button>
             <button id="closeDrawer">×</button>
           </div>

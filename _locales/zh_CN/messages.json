@@ -161,6 +161,18 @@
     "message": "删除此请求",
     "description": "Delete request tooltip"
   },
+  "expandAll": {
+    "message": "全部展开",
+    "description": "Expand all JSON tree nodes"
+  },
+  "collapseAll": {
+    "message": "全部收起",
+    "description": "Collapse all JSON tree nodes"
+  },
+  "copyItem": {
+    "message": "复制此项",
+    "description": "Copy individual JSON item tooltip"
+  },
   "eventsTrimmed": {
     "message": "已自动清理旧事件（超出 $COUNT$ 条上限）",
     "description": "Events trimmed notification",

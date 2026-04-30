@@ -161,6 +161,18 @@
     "message": "Delete request",
     "description": "Delete request tooltip"
   },
+  "expandAll": {
+    "message": "Expand All",
+    "description": "Expand all JSON tree nodes"
+  },
+  "collapseAll": {
+    "message": "Collapse All",
+    "description": "Collapse all JSON tree nodes"
+  },
+  "copyItem": {
+    "message": "Copy this item",
+    "description": "Copy individual JSON item tooltip"
+  },
   "eventsTrimmed": {
     "message": "Old events auto-trimmed (exceeded $COUNT$ limit)",
     "description": "Events trimmed notification",
