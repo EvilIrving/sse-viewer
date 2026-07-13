@@ -1,0 +1,14 @@
+{
+  "name": "sse-inspector",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A local DevTools panel for inspecting Server-Sent Events.",
+  "scripts": {
+    "validate": "node scripts/validate.mjs",
+    "package": "node scripts/package.mjs",
+    "release:check": "node scripts/validate-release.mjs",
+    "release": "npm run validate && npm run package && npm run release:check"
+  },
+  "engines": { "node": ">=20" }
+}
