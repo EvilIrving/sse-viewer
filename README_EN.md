@@ -1,103 +1,17 @@
-# SSE Inspector - Dedicated Debugging Panel for SSE Messages
+# SSE Inspector
 
-[简体中文](README.md) | English
+SSE Inspector gives developers a dedicated browser panel for following real-time messages while they work.
 
-> 🔍 A specialized Chrome DevTools extension designed for Server-Sent Events (SSE), making SSE debugging more efficient and convenient
+[Website](https://evilirving.github.io/sse-viewer/) · [Install](https://evilirving.github.io/sse-viewer/install.html) · [Privacy](https://evilirving.github.io/sse-viewer/privacy.html) · [Support](https://github.com/EvilIrving/sse-viewer/issues)
 
-## 📑 Table of Contents
+## What it helps with
 
-- [SSE Inspector - Dedicated Debugging Panel for SSE Messages](#sse-inspector---dedicated-debugging-panel-for-sse-messages)
-  - [📑 Table of Contents](#-table-of-contents)
-  - [🎯 What Problem Does It Solve?](#-what-problem-does-it-solve)
-  - [✨ Feature Comparison: SSE Inspector vs Network Panel](#-feature-comparison-sse-inspector-vs-network-panel)
-  - [🚀 How to Use](#-how-to-use)
-    - [1️⃣ Open DevTools](#1️⃣-open-devtools)
-    - [2️⃣ Switch to SSE Inspector Tab](#2️⃣-switch-to-sse-inspector-tab)
-    - [3️⃣ Refresh the Page](#3️⃣-refresh-the-page)
-  - [🔒 Privacy and Security](#-privacy-and-security)
-    - [Permission Details](#permission-details)
-    - [📊 Data Flow](#-data-flow)
-  - [👥 Who Is It For](#-who-is-it-for)
-  - [💬 Feedback and Support](#-feedback-and-support)
+Follow active connections, review messages in order, search recent activity and read formatted data without leaving the browser.
 
-## 🎯 What Problem Does It Solve?
+## Install
 
-While Chrome's Network panel can display SSE messages, the debugging experience is far from ideal:
-- Difficult to quickly locate SSE requests
-- Message content scattered across multiple EventStream tabs
-- JSON requires manual copying to external tools for formatting
-- Multiple SSE connections mixed together, hard to distinguish
-- Cannot search through message history
-- History is lost after page refresh
+Download the matching browser package from [GitHub Releases](https://github.com/EvilIrving/sse-viewer/releases) and follow the [installation guide](https://evilirving.github.io/sse-viewer/install.html).
 
-SSE Inspector provides a dedicated SSE debugging panel, enabling you to view and analyze SSE messages more efficiently.
+## Privacy
 
-
-## ✨ Feature Comparison: SSE Inspector vs Network Panel
-
-| Feature | Network Panel | SSE Inspector |
-|---------|---------------|------------|
-| 📍 **Finding SSE Requests** | ⚠️ Manual searching through numerous requests | ✅ Automatically aggregated in dedicated SSE panel |
-| 📍 **Viewing Message Content** | ⚠️ Click through EventStream records one by one | ✅ All messages displayed chronologically |
-| 📍 **Viewing JSON Data** | ❌ Manually copy content and paste into formatting tools | ✅ One-click automatic formatting into readable JSON |
-| 📍 **Distinguishing Multiple Connections** | ❌ Multiple SSE connections mixed together | ✅ Automatically grouped by connection for clarity |
-| 📍 **Searching Message History** | ❌ Search not supported | ✅ Keyword search through message history |
-| 📍 **Viewing History** | ⚠️ History lost after refresh | ✅ Complete history retained in panel for easy review |
-
-
-## 🚀 How to Use
-
-### 1️⃣ Open DevTools
-Press `F12`, or right-click on the page and select "**Inspect**"
-
-### 2️⃣ Switch to SSE Inspector Tab
-Find "**SSE Inspector**" in the DevTools tab bar (alongside Network, Console, etc.)
-
-### 3️⃣ Refresh the Page
-The panel will automatically capture and display all SSE messages from the current page
-
-
-## 🔒 Privacy and Security
-
-This extension strictly follows the **principle of minimum privilege**, requesting only 3 necessary permissions:
-
-### Permission Details
-
-| Permission | Purpose | Scope |
-|------------|---------|-------|
-| `activeTab` | Access to current active tab | Only active when you open DevTools and switch to SSE Inspector |
-| `scripting` | Script injection | To capture SSE messages, all processing is done locally |
-| `storage` | Local storage | Save minimal UI settings, does not involve business data |
-
-### 📊 Data Flow
-
-```
-Page SSE Data → Interception Script → DevTools Panel Display
-             ↓
-      Local processing only, no data uploaded
-```
-
-**All SSE message data:**
-- ✅ Processed only in browser memory
-- ✅ Not written to disk (unless you manually export)
-- ✅ Not sent to any external servers
-- ✅ Automatically cleared when you close DevTools or refresh the page
-
-
-## 👥 Who Is It For
-
-- 🧑‍💻 Web frontend or backend developers who frequently debug SSE interfaces
-- 🤖 Engineers developing AI chat applications or streaming response apps based on SSE
-- 📊 Developers building real-time push notifications, live feeds, dashboards, etc.
-- 🧪 QA engineers testing SSE functionality and stability
-
-
-## 💬 Feedback and Support
-
-If you have any suggestions or questions while using this extension, feel free to contact:
-
-📧 **Email**: [jescain2024@gmail.com](mailto:jescain2024@gmail.com)
-
----
-
-<p align="center">Made with ❤️ for developers debugging SSE</p>
+The information shown in the panel stays in your browser session and is not sent to an external service. Read the complete [privacy information](https://evilirving.github.io/sse-viewer/privacy.html).
